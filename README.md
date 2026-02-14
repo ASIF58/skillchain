@@ -101,4 +101,4 @@ Contributions are what make the open source community such an amazing place to l
 ## 📞 Contact
 **Your Name** - [swapskill.project@gmail.com]
 
-Project Link: [https://github.com/ASIF58/swapskill](https://github.com/ASIF58/swapskill)
+Project Link: [https://github.com/ASIF58/skillchain](https://github.com/ASIF58/skillchain)
