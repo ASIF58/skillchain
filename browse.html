@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Browse Requests — SwapSkill</title>
+<link rel="manifest" href="/manifest.json">
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js');
+  }
+</script>
+
+<script src="https://www.google.com/recaptcha/api.js" async defer></script>
+
+<link rel="icon" type="image/png" href="/logo.png">
+<style>
+:root { --primary:#3b82f6; --bg:#0f172a; --text:#f8fafc; --surface:#1e293b; --success:#22c55e; }
+*{box-sizing:border-box;margin:0;padding:0;font-family:system-ui,-apple-system,sans-serif}
+
+body {
+  background: radial-gradient(circle at top right, #1e293b, #0f172a);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+header {
+  background: rgba(15,23,42,0.9); padding: 16px 20px; display: flex; justify-content: space-between; align-items: center;
+  border-bottom: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(10px); position: sticky; top: 0; z-index: 20;
+}
+header h2 { margin:0; font-size:18px; font-weight: 600; display:flex; align-items:center; gap:8px;}
+header button { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.1); color: #fff; padding: 8px 16px; border-radius: 20px; cursor: pointer; transition: 0.2s; }
+header button:hover { background: rgba(255,255,255,0.2); }
+
+/* CAPTCHA GATE STYLES */
+.captcha-container {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    min-height: 60vh; text-align: center;
+}
+.captcha-box {
+    background: #1e293b; padding: 30px; border-radius: 16px;
+    border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+}
+
+/* HIDDEN CONTENT STYLES */
+.search-container { padding: 20px 20px 0; max-width: 800px; margin: 0 auto; display: none; }
+.search-input { width: 100%; padding: 14px 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); background: rgba(30,41,59,0.6); color: #fff; font-size: 16px; outline: none; transition: 0.2s; }
+.search-input:focus { border-color: var(--primary); background: rgba(30,41,59,0.9); }
+
+.container { max-width: 800px; margin: auto; padding: 20px; display: none; }
+
+/* Cards */
+.card { background: rgba(30,41,59,0.6); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.05); border-radius: 16px; padding: 16px; display: flex; gap: 16px; align-items: center; margin-bottom: 16px; transition: transform 0.2s; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+.card:hover { transform: translateY(-2px); background: rgba(30,41,59,0.8); }
+.avatar-container { position: relative; width: 56px; height: 56px; flex-shrink: 0; }
+.avatar { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; background: #334155; border: 2px solid rgba(255,255,255,0.1); }
+.online-dot { position: absolute; bottom: 2px; right: 2px; width: 12px; height: 12px; background: #22c55e; border: 2px solid #1e293b; border-radius: 50%; display: none; }
+.online-dot.active { display: block; }
+.info { flex: 1; }
+.info b { font-size: 16px; display: block; margin-bottom: 4px; color: #fff; }
+.small { font-size: 13px; color: #94a3b8; margin-bottom: 2px; }
+.badge { font-size: 11px; padding: 4px 10px; border-radius: 20px; display: inline-block; margin-top: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+.pending { background: rgba(3,105,161,0.2); color: #38bdf8; border: 1px solid rgba(56,189,248,0.3); }
+
+/* Buttons */
+.card button { border: none; padding: 10px 20px; border-radius: 12px; font-size: 14px; font-weight: 600; cursor: pointer; transition: 0.2s; white-space: nowrap; }
+.accept-btn { background: var(--primary); color: #fff; box-shadow: 0 4px 12px rgba(59,130,246,0.4); }
+.accept-btn:hover { background: #2563eb; transform: scale(1.05); }
+.join-btn { background: var(--success); color: #fff; box-shadow: 0 4px 12px rgba(34,197,94,0.4); }
+.join-btn:hover { background: #16a34a; transform: scale(1.05); }
+.empty { text-align: center; padding: 60px; color: #64748b; font-size: 16px; }
+
+/* Modal */
+.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(4px); z-index: 1000; justify-content: center; align-items: center; }
+.modal-content { background: #1e293b; border: 1px solid rgba(255,255,255,0.1); padding: 0; border-radius: 24px; width: 90%; max-width: 400px; position: relative; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.5); overflow: hidden; }
+.modal-header { background: linear-gradient(135deg, rgba(59,130,246,0.1), rgba(15,23,42,0)); padding: 30px 20px 20px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.05); }
+.modal-close { position: absolute; top: 16px; right: 20px; font-size: 24px; cursor: pointer; color: #64748b; z-index: 10; }
+.modal-avatar { width: 100px; height: 100px; border-radius: 50%; object-fit: cover; margin-bottom: 12px; border: 4px solid #1e293b; box-shadow: 0 0 0 2px var(--primary); }
+.status-badge { display: inline-flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.05); padding: 4px 12px; border-radius: 20px; font-size: 12px; margin-top: 8px; color: #94a3b8; }
+.status-badge.online { color: #22c55e; background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.2); }
+.modal-bio { font-size: 14px; color: #cbd5e1; background: rgba(0,0,0,0.2); padding: 12px; border-radius: 12px; line-height: 1.5; margin-bottom: 20px; text-align: center; }
+.stats-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+.stat-item { background: rgba(255,255,255,0.03); padding: 10px; border-radius: 12px; text-align: center; border: 1px solid rgba(255,255,255,0.05); }
+.stat-val { font-size: 18px; font-weight: 700; color: #fff; }
+.stat-lbl { font-size: 11px; color: #94a3b8; text-transform: uppercase; }
+.skill-list { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+.skill-tag { font-size: 12px; padding: 6px 12px; border-radius: 15px; background: rgba(59,130,246,0.1); color: #60a5fa; border: 1px solid rgba(59,130,246,0.2); }
+@media(max-width:600px){ .card{flex-direction:column;align-items:flex-start} .card button{width:100%} .avatar-container{ margin-bottom: 10px; } }
+</style>
+</head>
+<body>
+
+<header>
+  <h2>🔍 Browse Requests</h2>
+  <button id="backBtn">← Dashboard</button>
+</header>
+
+<div id="captchaGate" class="captcha-container">
+    <div class="captcha-box">
+        <h3 style="color:#fff; margin-bottom:15px;">Security Check</h3>
+        <p style="color:#94a3b8; margin-bottom:20px; font-size:14px;">Verify you are human to access requests.</p>
+        
+        <div class="g-recaptcha" 
+             data-sitekey="6LebzWUsAAAAAKbF0sv2EEBTg6EqyZkgaOCxujbV" 
+             data-callback="onCaptchaVerified"
+             data-theme="dark">
+        </div>
+    </div>
+</div>
+
+<div class="search-container" id="searchBar">
+    <input type="text" id="searchInput" class="search-input" placeholder="Search for skills (e.g. Python, Design)...">
+</div>
+
+<div class="container" id="requests">
+    <div style="text-align:center; padding:40px; color:#64748b;">Loading requests...</div>
+</div>
+
+<div id="profileModal" class="modal-overlay">
+  <div class="modal-content">
+    <div class="modal-close" id="closeModal">&times;</div>
+    <div class="modal-header">
+        <img id="mAvatar" class="modal-avatar" src="">
+        <h3 style="margin:0;color:#fff;font-size:22px"><span id="mName"></span> <span id="mVerified" style="display:none">☑</span></h3>
+        <p id="mUni" style="font-size:13px;color:#94a3b8;margin:4px 0 0"></p>
+        <div id="mStatus" class="status-badge">⚪ Offline</div>
+    </div>
+    <div class="modal-body">
+        <div class="stats-row">
+            <div class="stat-item"><div class="stat-val" id="mScore">0.0</div><div class="stat-lbl">Score</div></div>
+            <div class="stat-item"><div class="stat-val" id="mLevel">Beginner</div><div class="stat-lbl">Level</div></div>
+        </div>
+        <div class="modal-bio" id="mBio"></div>
+        <div class="skill-list" id="mSkills"></div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
+<script>emailjs.init("QWgG6h3s9AuU-du3B");</script>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js";
+import { getAuth,onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-auth.js";
+import { getFirestore, collection, getDocs, doc, getDoc, updateDoc, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-firestore.js";
+
+const app=initializeApp({ apiKey:"AIzaSyDwrZVBhR0VSbkbiktvkOsW3iSYJ6PFJ9A", authDomain:"swapskill.web.app", projectId:"swapskill-6e456" });
+const auth=getAuth(app);
+const db=getFirestore(app);
+
+let uid=null;
+let allRequestsData = []; 
+
+// --- 4. CALLBACK FUNCTION (Triggers when Captcha is checked) ---
+window.onCaptchaVerified = function() {
+    document.getElementById('captchaGate').style.display = 'none'; // Hide Gate
+    document.getElementById('searchBar').style.display = 'block';  // Show Search
+    document.getElementById('requests').style.display = 'block';   // Show List
+    
+    // Start Loading Data
+    if(uid) load();
+};
+
+onAuthStateChanged(auth, async u => {
+  if(!u) return location.href="login.html";
+  const userDoc = await getDoc(doc(db, "users", u.uid));
+  if(userDoc.exists() && userDoc.data().isBanned) { window.location.href = "dashboard.html"; return; }
+  uid=u.uid;
+  // NOTE: We do NOT call load() here anymore. We wait for Captcha.
+});
+
+// Search Logic
+document.getElementById('searchInput').addEventListener('input', (e) => {
+    const term = e.target.value.toLowerCase();
+    const filtered = allRequestsData.filter(item => {
+        return item.req.skillOffered.toLowerCase().includes(term) || item.req.skillRequested.toLowerCase().includes(term);
+    });
+    render(filtered);
+});
+
+async function load(){
+  const wrap=document.getElementById("requests");
+  wrap.innerHTML = '<div style="text-align:center; padding:40px; color:#64748b;">Loading requests...</div>';
+  
+  const snap=await getDocs(collection(db,"requests"));
+  allRequestsData = [];
+
+  for(const d of snap.docs){
+    const r=d.data();
+    if(r.senderId===uid) continue;
+    if(r.status==="completed") continue;
+    if(r.status==="accepted" && r.acceptedBy!==uid) continue;
+
+    const uSnap=await getDoc(doc(db,"users",r.senderId));
+    const u=uSnap.exists()?uSnap.data():{};
+    allRequestsData.push({ id: d.id, req: r, user: u });
+  }
+  render(allRequestsData);
+}
+
+function render(data) {
+    const wrap = document.getElementById("requests");
+    wrap.innerHTML = "";
+    if(data.length === 0) { wrap.innerHTML=`<div class="empty">No requests found.</div>`; return; }
+
+    data.forEach(item => {
+        const r = item.req; const u = item.user; const id = item.id;
+        const avatarUrl = u.avatarUrl || 'https://i.pravatar.cc/150';
+        const userName = u.name || "Unknown User";
+        const isOnline = u.isAvailable || false;
+        const action = r.status==="pending" ? `<button class="accept-btn" data-id="${id}" data-act="accept">Accept Request</button>` : `<button class="join-btn" data-id="${id}" data-act="join">Join Session</button>`;
+        const skillsJson = JSON.stringify(u.skillsOffered || []);
+        
+        const card=document.createElement("div"); card.className="card";
+        card.innerHTML=`
+          <div class="avatar-container profile-trigger" data-n="${userName}" data-i="${avatarUrl}" data-b="${u.bio||'No bio'}" data-u="${u.university||'Student'}" data-v="${u.verified||false}" data-s="${u.score||0}" data-o="${isOnline}" data-skills='${skillsJson}'>
+            <img class="avatar" src="${avatarUrl}"><div class="online-dot ${isOnline ? 'active' : ''}"></div>
+          </div>
+          <div class="info">
+            <b class="profile-trigger" data-n="${userName}" data-i="${avatarUrl}" data-b="${u.bio||'No bio'}" data-u="${u.university||'Student'}" data-v="${u.verified||false}" data-s="${u.score||0}" data-o="${isOnline}" data-skills='${skillsJson}'>
+               ${userName} ${u.verified ? '<span style="color:#3b82f6;font-size:14px">☑</span>' : ''}
+            </b>
+            <div class="small">Offers <b>${r.skillOffered}</b></div>
+            <div class="small">Wants <b>${r.skillRequested}</b></div>
+            <span class="badge ${r.status}">${r.status}</span>
+          </div>
+          ${action}
+        `;
+        wrap.appendChild(card);
+    });
+}
+
+// Logic for Modal & Buttons
+const modal = document.getElementById("profileModal");
+const mAvatar = document.getElementById("mAvatar"); const mName = document.getElementById("mName"); const mUni = document.getElementById("mUni"); const mBio = document.getElementById("mBio"); const mStatus = document.getElementById("mStatus"); const mVerified = document.getElementById("mVerified"); const mScore = document.getElementById("mScore"); const mLevel = document.getElementById("mLevel"); const mSkills = document.getElementById("mSkills"); const closeBtn = document.getElementById("closeModal");
+
+document.getElementById("requests").onclick=async e=>{
+  const t = e.target.closest('.profile-trigger') || e.target;
+  if(t.classList.contains("profile-trigger") || t.closest('.profile-trigger')){
+    const el = t.classList.contains("profile-trigger") ? t : t.closest('.profile-trigger');
+    mName.textContent = el.dataset.n; mAvatar.src = el.dataset.i; mBio.textContent = el.dataset.b; mUni.textContent = el.dataset.u;
+    mVerified.style.display = (el.dataset.v === 'true') ? 'inline' : 'none';
+    const score = parseFloat(el.dataset.s); mScore.textContent = score.toFixed(1); mLevel.textContent = score > 4 ? 'Expert' : (score > 2 ? 'Intermediate' : 'Beginner');
+    const isOnline = el.dataset.o === 'true';
+    if(isOnline) { mStatus.className = "status-badge online"; mStatus.innerHTML = "● Online"; } else { mStatus.className = "status-badge"; mStatus.innerHTML = "⚪ Offline"; }
+    mSkills.innerHTML = "";
+    try { const skills = JSON.parse(el.dataset.skills); skills.forEach(s => { const tag = document.createElement("span"); tag.className = "skill-tag"; tag.textContent = s; mSkills.appendChild(tag); }); } catch(err) { mSkills.innerHTML = ""; }
+    modal.style.display = "flex"; return;
+  }
+  const b=e.target.closest("button");
+  if(!b) return;
+  const id=b.dataset.id; const act=b.dataset.act;
+  if(act==="accept"){
+    b.disabled=true; const originalText = b.textContent; b.textContent = "Processing...";
+    try {
+        const reqRef=doc(db,"requests",id); const reqSnap=await getDoc(reqRef);
+        if(!reqSnap.exists()) throw new Error("Request missing"); const req=reqSnap.data();
+        const mySnap = await getDoc(doc(db, "users", uid)); const myData = mySnap.data() || {};
+        const link = `${window.location.origin}/session.html?req=${id}&role=caller`;
+        await updateDoc(reqRef,{ status:"accepted", acceptedBy:uid });
+        await addDoc(collection(db, "sessions"), { requestId: id, senderId: req.senderId, receiverId: uid, skill: req.skillOffered, status: "scheduled", createdAt: serverTimestamp(), senderAvatarUrl: req.senderAvatarUrl || "" });
+        try {
+            const senderSnap=await getDoc(doc(db,"users",req.senderId)); const sender=senderSnap.data() || {};
+            if(sender.email) { await emailjs.send("service_ae1iubu", "template_sj4ee1o", { to_name: sender.name, to_email: sender.email, accepter_name: myData.name || "User", session_link: link }); }
+        } catch(emailErr) { console.error("Email failed:", emailErr); alert("Warning: Request accepted, but Email Failed! " + JSON.stringify(emailErr)); }
+        alert("Request Accepted! Session Created."); load(); 
+    } catch (error) { alert("Error: " + error.message); b.disabled = false; b.textContent = originalText; }
+  }
+  if(act==="join"){ location.href=`session.html?req=${id}&role=answerer`; }
+};
+
+closeBtn.onclick = () => modal.style.display = "none";
+window.onclick = (e) => { if (e.target === modal) modal.style.display = "none"; }
+document.getElementById("backBtn").onclick=()=>location.href="dashboard.html";
+</script>
+</body>
+</html>

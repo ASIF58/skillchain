@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Live Session — SwapSkill</title>
+<style>
+:root { --primary:#3b82f6; --bg:#0f172a; --text:#f8fafc; --danger:#ef4444; --success:#22c55e; }
+*{box-sizing:border-box;margin:0;padding:0;font-family:system-ui,-apple-system,sans-serif}
+body{background:radial-gradient(circle at top right,#1e293b,#0f172a);color:var(--text);height:100vh;height:100dvh;display:flex;flex-direction:column;overflow:hidden}
+
+/* Header */
+header{height:60px;padding:0 20px;display:flex;align-items:center;justify-content:space-between;background:rgba(15,23,42,0.9);border-bottom:1px solid rgba(255,255,255,0.1);z-index:10}
+header h3{font-size:18px;display:flex;align-items:center;gap:8px}
+.live-dot{width:10px;height:10px;background:var(--danger);border-radius:50%;animation:pulse 2s infinite}
+.end-btn{background:rgba(239,68,68,0.2);color:var(--danger);border:1px solid var(--danger);padding:8px 16px;border-radius:20px;font-weight:600;cursor:pointer;transition:0.2s}
+.end-btn:hover{background:var(--danger);color:#fff}
+
+/* Main Grid */
+.main{flex:1;display:grid;grid-template-columns:1fr 350px;gap:16px;padding:16px;overflow:hidden}
+
+/* Video Area */
+.video-wrapper{position:relative;background:#000;border-radius:20px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center}
+video{width:100%;height:100%;object-fit:cover}
+
+/* Overlays */
+#localVideo{position:absolute;bottom:20px;right:20px;width:140px;height:100px;background:#000;border:2px solid rgba(255,255,255,0.3);border-radius:12px;transform:scaleX(-1);z-index:10;transition:0.3s;object-fit:cover}
+#statusOverlay{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,0.8);padding:10px 20px;border-radius:8px;z-index:5;backdrop-filter:blur(4px)}
+
+#remoteAvatar{position:absolute;inset:0;background:#1e293b;display:none;flex-direction:column;align-items:center;justify-content:center;color:#64748b;z-index:1}
+#remoteAvatar svg{width:80px;height:80px;fill:currentColor;margin-bottom:12px}
+
+/* Controls */
+.controls{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);display:flex;gap:12px;z-index:10;background:rgba(0,0,0,0.6);padding:10px 20px;border-radius:30px;backdrop-filter:blur(8px)}
+.c-btn{width:48px;height:48px;border-radius:50%;border:none;background:rgba(255,255,255,0.15);color:#fff;cursor:pointer;font-size:20px;display:flex;align-items:center;justify-content:center;transition:0.2s}
+.c-btn:hover{background:rgba(255,255,255,0.3);transform:scale(1.1)}
+.c-btn.off{background:var(--danger);color:#fff}
+.c-btn.active-share{background:var(--success);color:#fff}
+
+/* Chat Area */
+.chat-box{background:rgba(30,41,59,0.6);border:1px solid rgba(255,255,255,0.1);border-radius:20px;display:flex;flex-direction:column;overflow:hidden;backdrop-filter:blur(10px)}
+.chat-header{padding:14px;background:rgba(0,0,0,0.2);font-size:14px;font-weight:600;color:#94a3b8}
+.messages{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px}
+.msg{padding:10px 14px;border-radius:16px;max-width:85%;font-size:14px;word-break:break-word;line-height:1.4}
+.me{background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;align-self:flex-end;border-bottom-right-radius:4px}
+.them{background:#334155;color:#e2e8f0;align-self:flex-start;border-bottom-left-radius:4px}
+.inputs{padding:12px;display:flex;gap:8px;background:rgba(0,0,0,0.3)}
+.inputs input{flex:1;padding:12px 16px;border-radius:24px;border:none;background:rgba(255,255,255,0.1);color:#fff;outline:none}
+.inputs button{background:var(--success);border:none;width:44px;border-radius:50%;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center}
+
+/* Modal */
+.modal{position:fixed;inset:0;background:rgba(0,0,0,0.8);display:none;align-items:center;justify-content:center;z-index:999;backdrop-filter:blur(4px)}
+.modal-box{background:#1e293b;padding:24px;border-radius:24px;text-align:center;width:90%;max-width:320px;box-shadow:0 20px 25px -5px rgba(0,0,0,0.5)}
+.stars{font-size:36px;cursor:pointer;margin:20px 0;display:flex;justify-content:center;gap:8px}
+.star{color:#475569;transition:0.2s}
+.star.active{color:#fbbf24;transform:scale(1.1)}
+
+@media(max-width:768px){
+  .main{grid-template-columns:1fr;grid-template-rows:1fr 300px;gap:10px;padding:10px}
+  #localVideo{width:100px;height:130px;bottom:80px;right:12px;border-radius:12px}
+  .controls{width:90%;justify-content:space-evenly;bottom:12px}
+}
+@keyframes pulse{0%{opacity:1}50%{opacity:0.5}100%{opacity:1}}
+</style>
+</head>
+<body>
+
+<header>
+  <h3><span class="live-dot"></span> Live Session</h3>
+  <button class="end-btn" id="endBtn">End Session</button>
+</header>
+
+<div class="main">
+  <div class="video-wrapper">
+    <div id="statusOverlay">Connecting...</div>
+    
+    <video id="remoteVideo" autoplay playsinline></video>
+    
+    <div id="remoteAvatar">
+      <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+      <span>User Camera Off</span>
+    </div>
+
+    <video id="localVideo" autoplay playsinline muted></video>
+    
+    <div class="controls">
+      <button class="c-btn" id="micBtn" title="Mic">🎤</button>
+      <button class="c-btn" id="camBtn" title="Camera">📷</button>
+      <button class="c-btn" id="shareBtn" title="Share Screen">🖥️</button>
+    </div>
+  </div>
+
+  <div class="chat-box">
+    <div class="chat-header">Session Chat</div>
+    <div class="messages" id="msgs"></div>
+    <div class="inputs">
+      <input id="txt" placeholder="Type a message..." autocomplete="off"/>
+      <button id="send">➤</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="ratingModal">
+  <div class="modal-box">
+    <h3>Rate Experience</h3>
+    <div class="stars" id="starContainer">
+      <span class="star" data-v="1">★</span>
+      <span class="star" data-v="2">★</span>
+      <span class="star" data-v="3">★</span>
+      <span class="star" data-v="4">★</span>
+      <span class="star" data-v="5">★</span>
+    </div>
+    <button id="submitBtn" style="width:100%;padding:14px;background:#3b82f6;color:white;border:none;border-radius:12px;font-size:16px;font-weight:600;cursor:pointer">Submit & End</button>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-auth.js";
+import { 
+  getFirestore, doc, collection, addDoc, setDoc, updateDoc, deleteDoc, 
+  onSnapshot, query, where, getDocs, orderBy, serverTimestamp 
+} from "https://www.gstatic.com/firebasejs/12.3.0/firebase-firestore.js";
+
+const app = initializeApp({
+  apiKey:"AIzaSyDwrZVBhR0VSbkbiktvkOsW3iSYJ6PFJ9A",
+  authDomain:"swapskill.web.app",
+  projectId:"swapskill-6e456"
+});
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+const params = new URLSearchParams(location.search);
+const reqId = params.get("req");
+const role = params.get("role");
+
+let pc, localStream, remoteStream, uid;
+let cam=true, mic=true, rating=0;
+const statusEl = document.getElementById("statusOverlay");
+const remoteAvatar = document.getElementById("remoteAvatar");
+
+const servers = {
+  iceServers: [
+    { urls: ["stun:stun1.l.google.com:19302", "stun:stun2.l.google.com:19302"] },
+    { urls: "stun:stun.services.mozilla.com" }
+  ]
+};
+
+onAuthStateChanged(auth, async user => {
+  if(!user) return location.href="login.html";
+  uid = user.uid;
+  if(!reqId) return location.href="dashboard.html";
+  await startCall();
+});
+
+async function startCall() {
+  try {
+    localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+    document.getElementById("localVideo").srcObject = localStream;
+    
+    remoteStream = new MediaStream();
+    document.getElementById("remoteVideo").srcObject = remoteStream;
+
+    pc = new RTCPeerConnection(servers);
+
+    const mediaRef = doc(db, "calls", reqId, "mediaStatus", uid);
+    await setDoc(mediaRef, { cam: true, mic: true }); 
+
+    onSnapshot(collection(db, "calls", reqId, "mediaStatus"), snap => {
+      snap.forEach(d => {
+        if(d.id !== uid) {
+          const m = d.data();
+          remoteAvatar.style.display = m.cam ? "none" : "flex";
+        }
+      });
+    });
+
+    localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+    
+    pc.ontrack = event => {
+      event.streams[0].getTracks().forEach(track => remoteStream.addTrack(track));
+      statusEl.style.display = "none";
+    };
+
+    pc.onconnectionstatechange = () => {
+      if(pc.connectionState === "disconnected") {
+        statusEl.style.display = "block";
+        statusEl.textContent = "Peer Disconnected";
+      }
+    };
+
+    const callDoc = doc(db, "calls", reqId);
+    const offerC = collection(callDoc, "offerCandidates");
+    const answerC = collection(callDoc, "answerCandidates");
+
+    pc.onicecandidate = event => {
+      if(event.candidate) {
+        addDoc(role === "caller" ? offerC : answerC, event.candidate.toJSON());
+      }
+    };
+
+    if (role === "caller") {
+      await setDoc(callDoc, {}, { merge: false });
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+      await setDoc(callDoc, { offer: { type: offer.type, sdp: offer.sdp } }, { merge: true });
+
+      onSnapshot(callDoc, async snapshot => {
+        const data = snapshot.data();
+        if(!pc.currentRemoteDescription && data?.answer) {
+          await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
+        }
+      });
+    } else {
+      onSnapshot(callDoc, async snapshot => {
+        const data = snapshot.data();
+        if(!pc.currentRemoteDescription && data?.offer) {
+          await pc.setRemoteDescription(new RTCSessionDescription(data.offer));
+          const answer = await pc.createAnswer();
+          await pc.setLocalDescription(answer);
+          await updateDoc(callDoc, { answer: { type: answer.type, sdp: answer.sdp } });
+        }
+      });
+    }
+
+    const candidateColl = role === "caller" ? answerC : offerC;
+    onSnapshot(candidateColl, snapshot => {
+      snapshot.docChanges().forEach(change => {
+        if(change.type === "added") {
+          pc.addIceCandidate(new RTCIceCandidate(change.doc.data())).catch(console.error);
+        }
+      });
+    });
+
+    setupChat(callDoc);
+
+  } catch (err) {
+    alert("Camera Error: " + err.message);
+  }
+}
+
+function setupChat(callDoc) {
+  const msgCol = collection(callDoc, "messages");
+  onSnapshot(query(msgCol, orderBy("timestamp")), snap => {
+    const div = document.getElementById("msgs");
+    div.innerHTML = "";
+    snap.forEach(d => {
+      const m = d.data();
+      const el = document.createElement("div");
+      el.className = `msg ${m.uid === uid ? "me" : "them"}`;
+      el.textContent = m.text;
+      div.appendChild(el);
+    });
+    div.scrollTop = div.scrollHeight;
+  });
+
+  const send = () => {
+    const t = document.getElementById("txt");
+    if(t.value.trim()) {
+      addDoc(msgCol, { text: t.value, uid: uid, timestamp: serverTimestamp() });
+      t.value = "";
+    }
+  };
+  document.getElementById("send").onclick = send;
+  document.getElementById("txt").onkeypress = (e) => { if(e.key==="Enter") send(); };
+}
+
+document.getElementById("micBtn").onclick = async (e) => {
+  mic = !mic;
+  localStream.getAudioTracks()[0].enabled = mic;
+  e.target.classList.toggle("off", !mic);
+  await updateDoc(doc(db, "calls", reqId, "mediaStatus", uid), { mic: mic });
+};
+
+document.getElementById("camBtn").onclick = async (e) => {
+  cam = !cam;
+  localStream.getVideoTracks()[0].enabled = cam;
+  e.target.classList.toggle("off", !cam);
+  await updateDoc(doc(db, "calls", reqId, "mediaStatus", uid), { cam: cam });
+};
+
+document.getElementById("shareBtn").onclick = async (e) => {
+  try {
+    const btn = e.target.closest("button");
+    const displayStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+    const screenTrack = displayStream.getVideoTracks()[0];
+    const sender = pc.getSenders().find(s => s.track.kind === "video");
+    sender.replaceTrack(screenTrack);
+    btn.classList.add("active-share");
+    screenTrack.onended = () => {
+      sender.replaceTrack(localStream.getVideoTracks()[0]);
+      btn.classList.remove("active-share");
+    };
+  } catch(err) {
+    console.error("Screen Share Error:", err);
+  }
+};
+
+// --- HANDLES UI MODAL ---
+document.getElementById("endBtn").onclick = () => {
+  document.getElementById("ratingModal").style.display = "flex";
+};
+
+document.querySelectorAll(".star").forEach(s => {
+  s.onclick = function() {
+    rating = this.dataset.v;
+    document.querySelectorAll(".star").forEach(st => st.classList.toggle("active", st.dataset.v <= rating));
+  };
+});
+
+// --- UPDATED CLEANUP LOGIC: DELETES BY CREATOR ID ---
+document.getElementById("submitBtn").onclick = async function() {
+  if(!rating) return alert("Please rate!");
+  this.innerText = "Ending...";
+  this.disabled = true;
+
+  // Stop Media
+  if(localStream) localStream.getTracks().forEach(t => t.stop());
+  if(pc) pc.close();
+
+  try {
+    // 1. Delete the Call Data (WebRTC signaling)
+    await deleteDoc(doc(db, "calls", reqId));
+
+    // 2. SEARCH & DELETE THE USER'S REQUEST (The "Creator ID" Logic)
+    // This finds the request created by the current user and deletes it.
+    const q = query(collection(db, "requests"), where("creatorId", "==", uid));
+    const querySnapshot = await getDocs(q);
+    
+    // We create an array of delete promises to do them all at once
+    const deletePromises = [];
+    querySnapshot.forEach((document) => {
+        console.log("Deleting User Request:", document.id);
+        deletePromises.push(deleteDoc(doc(db, "requests", document.id)));
+    });
+
+    // 3. Fallback: Also try deleting by reqId (in case user is Receiver)
+    // The try/catch inside prevents crashing if it was already deleted above
+    if (reqId) {
+        deletePromises.push(
+             deleteDoc(doc(db, "requests", reqId)).catch(() => {})
+        );
+    }
+
+    // Wait for all deletions to finish
+    await Promise.all(deletePromises);
+    console.log("Cleanup complete");
+
+  } catch (err) {
+    console.error("Cleanup error:", err);
+  }
+
+  // 4. Redirect
+  window.location.href = "dashboard.html";
+};
+</script>
+</body>
+</html>

@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Requests — SwapSkill</title>
+  <link rel="icon" type="image/png" href="/logo.png">
+  
+  <style>
+    :root {
+      --primary: #3b82f6;
+      --success: #22c55e;
+      --danger: #ef4444;
+      --bg: #0f172a;
+      --text: #f8fafc;
+      --glass: rgba(30, 41, 59, 0.6);
+      --border: rgba(255, 255, 255, 0.1);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
+
+    body {
+      background: radial-gradient(circle at top right, #1e293b, #0f172a);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* --- Header --- */
+    header {
+      position: sticky; top: 0; z-index: 50;
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    header h2 { font-size: 20px; font-weight: 700; color: #fff; }
+    
+    .btn {
+      padding: 8px 16px; border-radius: 20px; border: none; font-size: 14px; font-weight: 600; cursor: pointer; transition: 0.2s;
+    }
+    .btn-ghost { background: rgba(255,255,255,0.05); color: #cbd5e1; border: 1px solid var(--border); }
+    .btn-ghost:hover { background: rgba(255,255,255,0.1); color: #fff; }
+    .btn-primary { background: var(--primary); color: #fff; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4); }
+    .btn-primary:hover { background: #2563eb; transform: translateY(-1px); }
+    
+    .btn-danger { background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2); }
+    .btn-danger:hover { background: rgba(239, 68, 68, 0.2); }
+
+    /* --- Tabs --- */
+    .tabs-container {
+      display: flex; justify-content: center; margin: 24px 0;
+    }
+    .tabs {
+      background: rgba(0,0,0,0.2);
+      padding: 4px; border-radius: 24px;
+      display: flex; gap: 4px; border: 1px solid var(--border);
+    }
+    .tab {
+      padding: 8px 24px; border-radius: 20px; cursor: pointer;
+      font-size: 14px; color: #94a3b8; transition: 0.2s;
+    }
+    .tab:hover { color: #fff; }
+    .tab.active {
+      background: var(--primary); color: #fff; font-weight: 600;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+
+    /* --- List --- */
+    .container {
+      max-width: 800px; margin: 0 auto; padding: 0 20px; width: 100%;
+    }
+    .request-card {
+      background: var(--glass);
+      backdrop-filter: blur(10px);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      transition: 0.2s;
+    }
+    .request-card:hover { transform: translateY(-2px); border-color: rgba(255,255,255,0.2); }
+
+    .card-header { display: flex; justify-content: space-between; align-items: flex-start; }
+    .skill-title { font-size: 16px; font-weight: 700; color: #fff; margin-bottom: 4px; }
+    .skill-meta { font-size: 13px; color: #94a3b8; }
+    
+    .badge {
+      font-size: 11px; padding: 4px 10px; border-radius: 20px; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;
+    }
+    .badge.caller { background: rgba(59,130,246,0.1); color: #60a5fa; border: 1px solid rgba(59,130,246,0.2); }
+    .badge.answerer { background: rgba(16,185,129,0.1); color: #34d399; border: 1px solid rgba(16,185,129,0.2); }
+
+    .actions { display: flex; gap: 10px; margin-top: 8px; }
+    
+    .empty-msg { text-align: center; color: #64748b; margin-top: 40px; font-size: 14px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h2>My Requests</h2>
+  <div style="display:flex; gap:10px">
+    <button class="btn btn-ghost" id="backBtn">← Dashboard</button>
+    <button class="btn btn-primary" id="logoutBtn">Logout</button>
+  </div>
+</header>
+
+<div class="tabs-container">
+  <div class="tabs">
+    <div class="tab active" id="tabPending">Pending</div>
+    <div class="tab" id="tabAccepted">Accepted</div>
+    <div class="tab" id="tabRejected">Rejected</div>
+  </div>
+</div>
+
+<div class="container" id="requestsContainer">
+  <div class="empty-msg">Loading...</div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js";
+import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-auth.js";
+import { getFirestore, collection, query, where, getDocs, doc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-firestore.js";
+
+const firebaseConfig={apiKey:"AIzaSyDwrZVBhR0VSbkbiktvkOsW3iSYJ6PFJ9A",authDomain:"swapskill.web.app",projectId:"swapskill-6e456"};
+const app=initializeApp(firebaseConfig);
+const auth=getAuth(app);
+const db=getFirestore(app);
+
+let currentUID=null;
+let allRequests=[];
+
+onAuthStateChanged(auth,async user=>{
+  if(!user) return location.href='login.html';
+  currentUID=user.uid;
+  await loadRequests();
+  showRequests('pending');
+});
+
+async function loadRequests(){
+  const sentQ=query(collection(db,'requests'),where('senderId','==',currentUID));
+  const recvQ=query(collection(db,'requests'),where('receiverId','==',currentUID));
+  
+  const [sent,recv]=await Promise.all([getDocs(sentQ),getDocs(recvQ)]);
+  
+  allRequests=[];
+  // If I sent it, I am the 'Caller' (initiator)
+  sent.forEach(d=>allRequests.push({id:d.id, role:'caller', ...d.data()}));
+  // If I received it, I am the 'Answerer' (responder)
+  recv.forEach(d=>allRequests.push({id:d.id, role:'answerer', ...d.data()}));
+}
+
+function showRequests(status){
+  const c=document.getElementById('requestsContainer');
+  c.innerHTML='';
+  
+  const list=allRequests.filter(r=>r.status===status);
+  
+  if(!list.length){
+    c.innerHTML=`<div class="empty-msg">No ${status} requests found.</div>`;
+    return;
+  }
+
+  list.forEach(r=>{
+    const div=document.createElement('div');
+    div.className='request-card';
+    
+    const roleBadge = r.role === 'caller' 
+      ? `<span class="badge caller">Outgoing</span>` 
+      : `<span class="badge answerer">Incoming</span>`;
+      
+    const skillName = r.skill || r.skillOffered || "Skill Swap"; // Fallback for various data structures
+    const desc = r.role === 'caller' 
+      ? `You requested <b>${r.skillRequested || skillName}</b>`
+      : `User requested <b>${r.skillRequested || skillName}</b>`;
+
+    let actionBtns = '';
+
+    // Action Logic
+    if(r.role==='answerer' && r.status==='pending'){
+      actionBtns = `
+        <button class='btn btn-primary' onclick="window.acceptReq('${r.id}')">Accept Request</button>
+        <button class='btn btn-danger' onclick="window.rejectReq('${r.id}')">Reject</button>
+      `;
+    } else if (r.role==='caller' && r.status==='pending') {
+       actionBtns = `<span style="font-size:13px;color:#94a3b8;font-style:italic">Waiting for response...</span>`;
+    }
+
+    if(r.status==='accepted'){
+      actionBtns = `<button class='btn btn-primary' onclick="window.startSession('${r.id}','${r.role}')">🚀 Start Session</button>`;
+    }
+
+    div.innerHTML=`
+      <div class="card-header">
+        <div>
+          <div class="skill-title">${skillName}</div>
+          <div class="skill-meta">${desc}</div>
+        </div>
+        ${roleBadge}
+      </div>
+      <div class="actions">${actionBtns}</div>
+    `;
+
+    c.appendChild(div);
+  });
+}
+
+// Making functions global for onclick
+window.acceptReq=async id=>{
+  const btn = event.target; 
+  btn.innerText = "Processing..."; btn.disabled = true;
+  await updateDoc(doc(db,'requests',id),{status:'accepted',acceptedAt:serverTimestamp()});
+  await loadRequests();
+  showRequests('accepted');
+  // Switch tab UI
+  activateTab('accepted');
+};
+
+window.rejectReq=async id=>{
+  if(!confirm("Reject this request?")) return;
+  await updateDoc(doc(db,'requests',id),{status:'rejected'});
+  await loadRequests();
+  showRequests('rejected');
+  activateTab('rejected');
+};
+
+window.startSession=(id,role)=>{
+  location.href=`session.html?req=${id}&role=${role}`;
+};
+
+const activateTab=t=>{
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+  // Handle casing for ID select
+  const id = 'tab' + t.charAt(0).toUpperCase() + t.slice(1);
+  const el = document.getElementById(id);
+  if(el) el.classList.add('active');
+  
+  showRequests(t);
+};
+
+document.getElementById('tabPending').onclick=()=>activateTab('pending');
+document.getElementById('tabAccepted').onclick=()=>activateTab('accepted');
+document.getElementById('tabRejected').onclick=()=>activateTab('rejected');
+
+document.getElementById('backBtn').onclick=()=>location.href='dashboard.html';
+document.getElementById('logoutBtn').onclick=async()=>{await signOut(auth);location.href='login.html'};
+</script>
+</body>
+</html>

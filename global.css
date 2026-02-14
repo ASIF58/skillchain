@@ -1,0 +1,35 @@
+#globalPopup {
+    position: fixed; top: 50%; left: 50%;
+    transform: translate(-50%, -50%) scale(0.7);
+    background: white; border-radius: 15px;
+    padding: 25px; width: 320px; text-align: center;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+    opacity: 0; pointer-events: none; transition: 0.25s ease;
+    z-index: 999999;
+}
+#globalPopup.show { opacity: 1; transform: translate(-50%, -50%) scale(1); pointer-events: auto; }
+#popupOverlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.45);
+    backdrop-filter: blur(6px); opacity: 0; transition: 0.25s ease;
+    pointer-events: none; z-index: 999998;
+}
+#popupOverlay.show { opacity: 1; pointer-events: auto; }
+
+#networkAnim {
+    width: 70px; height: 70px; margin: 0 auto 10px;
+    border-radius: 50%; border: 6px solid #999; border-top-color: red;
+    animation: spin 1s linear infinite; display: none;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+#loaderOverlay {
+    position: fixed; inset: 0; backdrop-filter: blur(10px);
+    background: rgba(0,0,0,0.4); z-index: 999999;
+    display: flex; align-items: center; justify-content: center;
+    opacity: 1; transition: opacity 0.4s;
+}
+.loader { width: 55px; height: 55px; border: 6px solid #fff;
+    border-top-color: #4755ed; border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+

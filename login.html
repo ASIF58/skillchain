@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="manifest" href="/manifest.json">
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js');
+  }
+</script>
+  <link rel="icon" type="image/png" href="/logo.png">
+  <title>Login — SwapSkill</title>
+  
+  <meta name="description" content="SwapSkill is a peer-to-peer platform where students exchange skills.">
+  
+  <style>
+    :root {
+      --primary: #3b82f6;
+      --bg: #0f172a;
+      --text: #f8fafc;
+      --glass: rgba(30, 41, 59, 0.6);
+      --border: rgba(255, 255, 255, 0.1);
+    }
+
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+      font-family: system-ui, -apple-system, sans-serif;
+      background: radial-gradient(circle at top right, #1e293b, #0f172a);
+      color: var(--text);
+    }
+
+    /* Glassmorphism Card */
+    .login-container {
+      background: var(--glass);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+      padding: 40px 32px;
+      width: 100%;
+      max-width: 380px;
+      position: relative;
+      text-align: center;
+      animation: fadeIn 0.5s ease-out;
+    }
+
+    h2 {
+      margin: 0 0 24px 0;
+      font-size: 24px;
+      font-weight: 700;
+      background: linear-gradient(90deg, #60a5fa, #3b82f6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    label {
+      display: block;
+      text-align: left;
+      margin-bottom: 8px;
+      font-size: 13px;
+      color: #94a3b8;
+      font-weight: 600;
+    }
+
+    input {
+      width: 100%;
+      padding: 12px 16px;
+      margin-bottom: 20px;
+      background: rgba(0, 0, 0, 0.2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      color: #fff;
+      font-size: 14px;
+      outline: none;
+      transition: 0.2s;
+      box-sizing: border-box;
+    }
+    input:focus {
+      border-color: var(--primary);
+      background: rgba(0, 0, 0, 0.4);
+    }
+
+    /* Buttons */
+    button {
+      width: 100%;
+      padding: 14px;
+      background: var(--primary);
+      border: none;
+      font-size: 15px;
+      font-weight: 600;
+      color: white;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: 0.2s;
+      box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
+    }
+    button:hover {
+      background: #2563eb;
+      transform: translateY(-2px);
+    }
+
+    /* Google Button */
+    .google-btn {
+      background: #ffffff !important; color: #1e293b !important;
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      margin-bottom: 24px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2) !important;
+    }
+    .google-btn:hover { background: #f1f5f9 !important; transform: translateY(-2px); }
+    .google-icon { width: 20px; height: 20px; }
+
+    .divider {
+      display: flex; align-items: center; color: #64748b; font-size: 12px; margin: 0 0 24px 0;
+    }
+    .divider::before, .divider::after {
+      content: ""; flex: 1; height: 1px; background: var(--border);
+    }
+    .divider span { padding: 0 10px; }
+
+    .signup-link {
+      display: block;
+      margin-top: 20px;
+      color: #94a3b8;
+      text-decoration: none;
+      font-size: 13px;
+    }
+    .signup-link:hover {
+      color: var(--primary);
+      text-decoration: underline;
+    }
+
+    #error {
+      color: #ef4444;
+      font-size: 13px;
+      margin-top: 10px;
+      min-height: 20px;
+    }
+
+    /* Loader */
+    #blur-overlay {
+      position: fixed; inset: 0;
+      backdrop-filter: blur(8px);
+      background: rgba(15, 23, 42, 0.8);
+      z-index: 9998;
+      display: none;
+    }
+
+    #loader {
+      position: fixed; top: 50%; left: 50%;
+      width: 50px; height: 50px;
+      border: 4px solid rgba(255,255,255,0.1);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      transform: translate(-50%, -50%);
+      z-index: 9999;
+      display: none;
+    }
+    
+    @keyframes spin { to { transform: translate(-50%, -50%) rotate(360deg); } }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+  </style>
+</head>
+
+<body>
+
+  <div id="blur-overlay"></div>
+  <div id="loader"></div>
+
+  <div class="login-container" id="login-box">
+    <h2>Login</h2>
+
+    <button id="googleBtn" class="google-btn">
+        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/google/google-original.svg" class="google-icon" alt="G">
+        Log in with Google
+    </button>
+
+    <div class="divider"><span>OR EMAIL</span></div>
+
+    <label>Email</label>
+    <input type="text" id="username" placeholder="student@university.edu" autocomplete="email">
+
+    <label>Password</label>
+    <input type="password" id="password" placeholder="••••••••" autocomplete="current-password">
+
+    <button id="loginBtn">Log In</button>
+
+    <p id="error"></p>
+    <a class="signup-link" href="signup.html">New user? Create an account</a>
+  </div>
+
+<script type="module">
+/* FIREBASE IMPORT */
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, setPersistence, browserLocalPersistence, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-auth.js";
+import { getFirestore, doc, getDoc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-firestore.js";
+
+/* CONFIG */
+const firebaseConfig = {
+    apiKey: "AIzaSyDwrZVBhR0VSbkbiktvkOsW3iSYJ6PFJ9A",
+    authDomain: "swapskill.web.app",
+    projectId: "swapskill-6e456",
+    storageBucket: "swapskill-6e456.firebasestorage.app",
+    messagingSenderId: "692315602994",
+    appId: "1:692315602994:web:65cd15b1eafe9d7d133c2b",
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+setPersistence(auth, browserLocalPersistence);
+const blur = document.getElementById("blur-overlay");
+const loader = document.getElementById("loader");
+const loginBox = document.getElementById("login-box");
+const errorEl = document.getElementById("error");
+const googleBtn = document.getElementById("googleBtn");
+
+function showLoading() {
+    blur.style.display = "block";
+    loader.style.display = "block";
+}
+function hideLoading() {
+    blur.style.display = "none";
+    loader.style.display = "none";
+}
+
+// Initial Check
+showLoading();
+loginBox.style.opacity = "0"; // Hide strictly until check done
+
+setTimeout(() => {
+    onAuthStateChanged(auth, async (user) => {
+        if (user) {
+            const ref = doc(db, "users", user.uid);
+            const snap = await getDoc(ref);
+            if (snap.exists()) {
+                window.location.href = "dashboard.html"; 
+            } else {
+                window.location.href = "userprofile.html"; 
+            }
+        } else {
+            hideLoading();
+            loginBox.style.opacity = "1"; // Fade in
+        }
+    });
+}, 800);
+
+// --- GOOGLE LOGIN LOGIC ---
+googleBtn.addEventListener("click", async () => {
+    const provider = new GoogleAuthProvider();
+    showLoading();
+    
+    try {
+        const result = await signInWithPopup(auth, provider);
+        const user = result.user;
+
+        // Check if user document exists
+        const userRef = doc(db, "users", user.uid);
+        const userSnap = await getDoc(userRef);
+
+        if (userSnap.exists()) {
+            // User exists -> Go to Dashboard
+            window.location.href = "dashboard.html";
+        } else {
+            // New User (clicked Login by mistake) -> Create Doc & Go to Profile
+            await setDoc(userRef, {
+                name: user.displayName,
+                email: user.email,
+                username: user.email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, ''),
+                avatarUrl: user.photoURL,
+                createdAt: serverTimestamp(),
+                score: 0,
+                verified: true
+            });
+            window.location.href = "userprofile.html";
+        }
+
+    } catch (error) {
+        hideLoading();
+        console.error("Google Login Error:", error);
+        errorEl.textContent = "Google Login Failed. Try again.";
+    }
+});
+
+// --- EMAIL/PASS LOGIN LOGIC ---
+document.getElementById("loginBtn").addEventListener("click", (e) => {
+    e.preventDefault();
+    const email = document.getElementById("username").value.trim();
+    const password = document.getElementById("password").value.trim();
+
+    if (!email || !password) {
+        errorEl.textContent = "Please fill all fields.";
+        return;
+    }
+
+    showLoading();
+    errorEl.textContent = "";
+
+    signInWithEmailAndPassword(auth, email, password)
+        .then(async (userCred) => {
+            const user = userCred.user;
+            const ref = doc(db, "users", user.uid);
+            const snap = await getDoc(ref);
+
+            if (snap.exists()) {
+                window.location.href = "dashboard.html";
+            } else {
+                window.location.href = "userprofile.html";
+            }
+        })
+        .catch((err) => {
+            hideLoading();
+            if(err.code === 'auth/invalid-credential' || err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
+                errorEl.textContent = "Invalid email or password.";
+            } else if (err.code === 'auth/too-many-requests') {
+                 errorEl.textContent = "Too many attempts. Try again later.";
+            } else {
+                errorEl.textContent = "Login failed. Please try again.";
+            }
+            console.error(err);
+        });
+});
+</script>
+</body>
+</html>

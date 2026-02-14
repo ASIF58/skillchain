@@ -1,0 +1,42 @@
+phase 1: Requirements Gathering and Analysis
+Goal: Define and document all functional and non-functional requirements for the SwapSkill platform upfront.
+Activities:
+User Needs Analysis: Detail what students need (e.g., search filters, peer-to-peer chat, profile management).
+Functional Requirements: Document features like "User must be able to log in," "System must allow skill tagging."
+Non-Functional Requirements: Document performance (e.g., page load time < 2 seconds), security, and scalability needs.
+Deliverable: A comprehensive Software Requirements Specification (SRS) document.
+Phase 2: System Design
+Goal: Define the technical architecture, database structure, and overall system design based on the approved SRS.
+Activities:
+Architecture Design: Decide on the technology stack (e.g., frontend, backend, database).
+Database Design: Create the full schema for users, skills, messages, and connections.
+UI/UX Design: Create detailed wireframes, mockups, and a style guide for all screens (Login, Profile, Search Results).
+Deliverable: A complete Design Document and approved UI/UX blueprints.
+Phase 3: Implementation (Coding)
+Goal: Write and integrate all the code for the platform based strictly on the approved design documents.
+Activities:
+Module Development: Developers write code for individual components (e.g., the User Profile module, the Messaging module).
+Unit Testing: Individual components are tested by developers to ensure they work in isolation.
+Integration: All coded modules are combined into a single, cohesive system.
+Deliverable: A complete, integrated system awaiting formal testing.
+Phase 4: Testing (Verification)
+Goal: Formally test the complete SwapSkill system to verify it meets all requirements defined in Phase 1.
+Activities:
+System Testing: Testing the entire system end-to-end (e.g., can a student sign up, find a skill, and send a message?).
+User Acceptance Testing (UAT): A group of actual students tests the platform to ensure it works as expected in a real-world scenario.
+Performance and Security Testing: Stress-testing the system and checking for vulnerabilities.
+Deliverable: A Test Report confirming that the system is ready for launch.
+Phase 5: Deployment
+Goal: Release the fully tested and approved SwapSkill platform to the intended user base (students).
+Activities:
+Installation: Setting up the live production environment (servers, databases, network).
+Data Migration: Populating any initial necessary data (if applicable).
+Launch: Making the platform publicly accessible to users.
+Deliverable: A live, operational SwapSkill website.
+Phase 6: Maintenance and Evolution
+Goal: Ensure the platform continues to operate smoothly after launch and address any post-deployment issues.
+Activities:
+Corrective Actions: Fixing bugs and errors discovered after the launch.
+Adaptive Changes: Updating the system to work with new operating systems or browser versions.
+Perfective Updates: Making small enhancements or improvements to performance (any major new feature would ideally require starting the SDLC over from Phase 1).
+Deliverable: Ongoing system support and updates.
