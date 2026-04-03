@@ -99,6 +99,6 @@ Contributions are what make the open source community such an amazing place to l
 5.  Open a Pull Request
 
 ## 📞 Contact
-**Your Name** - [swapskill.project@gmail.com]
+**Support email** - [swapskill.project@gmail.com]
 
 Project Link: [https://github.com/ASIF58/skillchain](https://github.com/ASIF58/skillchain)
