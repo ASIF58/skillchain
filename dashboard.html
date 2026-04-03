@@ -1,0 +1,651 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>Dashboard — SwapSkill</title>
+  <link rel="manifest" href="manifest.json">
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js');
+    }
+  </script>
+  <link rel="icon" type="image/png" href="logo.png">
+
+  <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
+  <script>emailjs.init("QWgG6h3s9AuU-du3B");</script>
+
+  <style>
+  :root {
+    --primary: #3b82f6; --success: #22c55e; --danger: #ef4444;
+    --bg: #0f172a; --text: #f8fafc; --glass: rgba(30, 41, 59, 0.7); --border: rgba(255, 255, 255, 0.1);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    background: radial-gradient(circle at top right, #1e293b, #0f172a);
+    color: var(--text); min-height: 100vh; display: flex; flex-direction: column; overflow-x: hidden;
+  }
+
+  /* --- Header --- */
+  header {
+    position: sticky; top: 0; z-index: 50; background: rgba(15, 23, 42, 0.95);
+    backdrop-filter: blur(12px); border-bottom: 1px solid var(--border);
+    padding: 12px 16px; display: flex; align-items: center; justify-content: space-between;
+  }
+  .brand { 
+    font-size: 18px; font-weight: 800; 
+    background: linear-gradient(90deg, #60a5fa, #3b82f6); 
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; 
+    text-decoration: none;
+  }
+  .header-right { display: flex; gap: 8px; align-items: center; }
+
+  .btn {
+    padding: 8px 14px; border-radius: 10px; border: none; font-size: 13px; font-weight: 600; cursor: pointer; transition: 0.2s; 
+    text-decoration:none; display:inline-flex; align-items:center; justify-content:center; white-space: nowrap;
+  }
+  .btn-ghost { background: rgba(255,255,255,0.08); color: #cbd5e1; border: 1px solid var(--border); }
+  .btn-ghost:hover { background: rgba(255,255,255,0.15); color: #fff; }
+  .btn-primary { background: var(--primary); color: #fff; }
+  .btn-primary:hover { background: #2563eb; }
+  .btn-success { background: var(--success); color: #fff; }
+
+  /* --- Layout --- */
+  .container {
+    max-width: 1200px; margin: 20px auto; padding: 0 20px;
+    display: grid; grid-template-columns: 320px 1fr; gap: 24px; width: 100%;
+  }
+
+  /* --- Profile Card --- */
+  .profile-card { background: var(--glass); backdrop-filter: blur(10px); border: 1px solid var(--border); border-radius: 24px; padding: 24px; text-align: center; }
+  .avatar-wrapper { position: relative; width: 100px; height: 100px; margin: 0 auto 16px; flex-shrink: 0; }
+  .avatar {
+    width: 100%; height: 100%; border-radius: 50%; overflow: hidden; border: 3px solid rgba(255,255,255,0.1);
+    background: linear-gradient(180deg,#c7d2fe,#eef2ff); display: flex; align-items: center; justify-content: center; 
+    font-size: 36px; font-weight: 800; color: #334155; object-fit: cover;
+  }
+  .chooseAvatarBtn {
+    position: absolute; bottom: 0; right: 0; background: var(--primary); color: #fff; border: none; width: 32px; height: 32px; border-radius: 50%;
+    cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+  }
+
+  .profile-name { font-size: 18px; font-weight: 700; color: #fff; margin:0; display: flex; align-items: center; justify-content: center; gap: 5px; }
+  .verified-badge { color: #3b82f6; font-size: 16px; cursor: help; }
+  
+  .status-dot {
+    width: 10px; height: 10px; background: var(--success); border-radius: 50%; 
+    display: inline-block; box-shadow: 0 0 8px rgba(34, 197, 94, 0.8); margin-left: 4px;
+    transition: 0.3s;
+  }
+  .status-dot.offline { background: #64748b; box-shadow: none; }
+
+  .profile-username { font-size: 14px; color: #94a3b8; margin-top: 2px; }
+  .profile-bio { font-size: 13px; color: #cbd5e1; margin: 12px 0; line-height: 1.5; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 12px; }
+
+  .skill-tags { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-bottom: 20px; margin-top: 15px;}
+  .skill-tag { background: rgba(59,130,246,0.15); color: #60a5fa; padding: 4px 10px; border-radius: 20px; font-size: 11px; border: 1px solid rgba(59,130,246,0.3); }
+
+  .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 0; }
+  .stat-box { background: rgba(255,255,255,0.03); border-radius: 12px; padding: 10px; border: 1px solid var(--border); }
+  .stat-val { font-size: 18px; font-weight: 700; color: #fff; }
+  .stat-label { font-size: 11px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px; }
+
+  .quick-actions { display: flex; flex-direction: column; gap: 10px; margin-top: 24px; }
+  .quick-actions .btn { width: 100%; padding: 12px; }
+
+  /* --- Panels --- */
+  .section-title { font-size: 18px; font-weight: 600; margin-bottom: 12px; color: #e2e8f0; display: flex; align-items: center; justify-content: space-between; }
+  .panel { background: var(--glass); border: 1px solid var(--border); border-radius: 20px; padding: 16px; margin-bottom: 24px; }
+
+  .list-item {
+    display: flex; align-items: center; justify-content: space-between; padding: 12px;
+    background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; margin-bottom: 8px;
+  }
+  .item-left { display: flex; align-items: center; gap: 12px; }
+  .item-avatar { width: 40px; height: 40px; border-radius: 50%; background: #334155; object-fit: cover; }
+  .item-info b { display: block; font-size: 14px; color: #f1f5f9; }
+  .item-info span { font-size: 12px; color: #94a3b8; }
+
+  /* --- Modals & Toasts --- */
+  .modal-backdrop {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); z-index: 100;
+    display: none; align-items: center; justify-content: center;
+  }
+  .modal-backdrop.show { display: flex; animation: fadeIn 0.2s; }
+  .modal-content {
+    background: #1e293b; border: 1px solid var(--border); width: 90%; max-width: 400px; padding: 24px; border-radius: 24px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.5); animation: scaleIn 0.2s; max-height: 85vh; overflow-y: auto;
+  }
+  .modal-content h3 { margin-bottom: 16px; color: #fff; text-align:center; }
+
+  .avatar-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 10px; }
+  .avatar-grid img { width: 100%; aspect-ratio: 1; border-radius: 50%; cursor: pointer; border: 2px solid transparent; background:#334155; }
+  .avatar-grid img:hover { border-color: var(--primary); transform: scale(1.1); }
+
+  .history-label { font-size: 12px; color: #94a3b8; margin: 15px 0 5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+
+  .upload-section { text-align: center; border-bottom: 1px solid var(--border); padding-bottom: 20px; margin-bottom: 10px; }
+  .upload-status { font-size: 12px; color: #3b82f6; margin-top: 8px; display: none; }
+
+  /* --- SLIDE-IN IN-APP NOTIFICATION TOAST --- */
+  #slideToast {
+    position: fixed; top: 80px; right: -350px; /* Hidden off-screen */
+    background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(10px); border: 1px solid var(--border); border-left: 4px solid var(--primary);
+    border-radius: 12px; padding: 16px; color: #fff; width: 300px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    transition: 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 1000;
+    display: flex; gap: 12px; align-items: center; cursor: pointer;
+  }
+  #slideToast.show { right: 20px; }
+  .toast-icon { font-size: 24px; background: rgba(255,255,255,0.1); width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 50%; }
+
+  .offline-bar {
+    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+    background: #ef4444; color: white; padding: 8px 16px; border-radius: 20px; font-weight: 600; font-size: 13px; display: none; z-index: 200;
+  }
+  #toast {
+    position: fixed; bottom: 24px; right: 24px; background: #0f172a; border: 1px solid var(--border);
+    color: #fff; padding: 12px 20px; border-radius: 12px; transform: translateY(100px); transition: 0.3s; z-index: 200;
+  }
+  #toast.show { transform: translateY(0); }
+
+  @media(max-width: 900px){
+    header { padding: 10px 14px; } .header-right { gap: 6px; } .btn-ghost { padding: 6px 10px; font-size: 11px; } .brand { font-size: 16px; }
+    .container { grid-template-columns: 1fr; padding: 16px; width: 100%; gap: 16px; }
+    .profile-card { display: flex; align-items: center; text-align: left; gap: 16px; padding: 16px; }
+    .avatar-wrapper { width: 60px; height: 60px; margin: 0; }
+    .chooseAvatarBtn { width: 24px; height: 24px; font-size: 12px; right: -4px; bottom: -4px; }
+    .profile-bio, .stats-grid, .skill-tags { display: none; } 
+    .profile-info { flex: 1; } .quick-actions { display: none; } 
+    #mobileQuickRequestBtn { display: block !important; width: 100%; margin-top:10px; padding:12px; }
+    #slideToast.show { right: 50%; transform: translateX(50%); top: 70px; width: 90%; max-width: 350px; }
+  }
+
+  @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+  @keyframes scaleIn { from{transform:scale(0.95)} to{transform:scale(1)} }
+  </style>
+</head>
+<body>
+
+<header>
+  <a href="dashboard.html" class="brand">SwapSkill</a>
+  <div class="header-right">
+    <div class="notif-wrapper" style="position:relative;">
+        <button id="notifBtn" style="background:none;border:none;font-size:20px;cursor:pointer;color:#fff;">🔔</button>
+        <div id="notifBadge" style="position:absolute;top:-5px;right:-5px;background:#ef4444;color:white;font-size:10px;padding:2px 5px;border-radius:50%;display:none;">0</div>
+        <div id="notifDropdown" style="position:absolute;top:30px;right:0;width:250px;background:#1e293b;border:1px solid rgba(255,255,255,0.1);border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,0.5);display:none;z-index:100;overflow:hidden;">
+            <div id="notifList" style="max-height:300px;overflow-y:auto;">
+                <div style="padding:15px;text-align:center;color:#64748b;font-size:12px;">No new notifications</div>
+            </div>
+        </div>
+    </div>
+    <a href="request.html" class="btn btn-ghost">Discover</a>
+    <a href="chat.html" class="btn btn-primary">Messages</a>
+    <button class="btn btn-ghost" style="color:#ef4444;" id="logoutBtn">Logout</button>
+  </div>
+</header>
+
+<div id="slideToast" onclick="location.replace('request.html')">
+    <div class="toast-icon" id="slideToastIcon">🔔</div>
+    <div style="flex:1;">
+        <div style="font-weight: bold; font-size: 14px;" id="slideToastTitle">New Notification</div>
+        <div style="font-size: 12px; color: #cbd5e1; margin-top:2px;" id="slideToastDesc">You have a new update.</div>
+    </div>
+</div>
+
+<div class="container">
+  
+  <aside>
+    <div class="profile-card">
+      <div class="avatar-wrapper">
+        <div class="avatar" id="avatarEl"></div> 
+        <button class="chooseAvatarBtn" id="chooseAvatarBtn">✎</button>
+      </div>
+      <div class="profile-info">
+        <h3 class="profile-name" id="nameEl">
+          Loading... 
+          <span class="status-dot" id="statusDot" title="Online"></span>
+        </h3>
+        <p class="profile-username" id="usernameEl">username</p>
+        <a href="editprofile.html" class="btn btn-ghost" style="margin-top:6px; font-size:11px; padding:4px 10px;">Edit Profile</a>
+      </div>
+      
+      <div class="profile-bio" id="bioEl">No bio yet.</div>
+
+      <div class="skill-tags" id="skillTags"></div>
+
+      <div class="stats-grid">
+        <div class="stat-box">
+          <div class="stat-val" id="scoreEl">0.0</div>
+          <div class="stat-label">Score</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-val" id="levelEl">-</div>
+          <div class="stat-label">Level</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-val" id="pendingCount">0</div>
+          <div class="stat-label">Pending</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-val" id="acceptedCount">0</div>
+          <div class="stat-label">Accepted</div>
+        </div>
+      </div>
+      
+      <div class="quick-actions">
+        <button class="btn btn-primary" onclick="location.replace('request.html')">Find a Skill Partner</button>
+        <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.1); margin: 10px 0;">
+        <button class="btn btn-ghost" id="deleteAccBtn" style="color: #ef4444; border-color: rgba(239,68,68,0.3);">
+             Delete Account
+        </button>
+      </div>
+    </div>
+    <button class="btn btn-primary" id="mobileQuickRequestBtn" style="width:100%; margin-top:10px; display:none; background:#3b82f6;" onclick="location.replace('request.html')"> Find a Partner</button>
+  </aside>
+
+  <main>
+    <div class="section-title">
+      Active Swaps (Ready to Call)
+    </div>
+    <div class="panel" id="sessionsPanel">
+      <div id="sessionsList">
+        <div style="color:#64748b;text-align:center;padding:20px;font-size:14px">Loading sessions...</div>
+      </div>
+    </div>
+
+    <div class="section-title">
+      Incoming Requests
+      <a href="request.html" class="btn btn-ghost" style="font-size:12px;padding:4px 10px">Manage All</a>
+    </div>
+    <div class="panel" id="pendingPanel">
+      <div id="requestsList">
+        <div style="color:#64748b;text-align:center;padding:20px;font-size:14px">No pending requests</div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<div class="modal-backdrop" id="avatarModal">
+  <div class="modal-content">
+    <h3>Update Profile Picture</h3>
+    <div class="upload-section">
+        <p style="font-size:13px; color:#94a3b8; margin-bottom:10px;">Upload Custom Photo</p>
+        <input type="file" id="customUploadInput" accept="image/*" style="display:none">
+        <button class="btn btn-primary" id="triggerUploadBtn">📁 Select from Device</button>
+        <div id="uploadStatus" class="upload-status">Uploading...</div>
+    </div>
+    <div id="historySection" style="display:none">
+        <div class="history-label">Your Uploads</div>
+        <div class="avatar-grid" id="historyGrid"></div>
+    </div>
+    <div class="history-label">Default Avatars</div>
+    <div class="avatar-grid" id="avatarGrid"></div>
+    <button class="btn btn-ghost" style="width:100%;margin-top:16px" id="closeAvatarModal">Close</button>
+  </div>
+</div>
+
+<div class="offline-bar" id="offlineBar"> No Internet Connection</div>
+<div id="toast"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js";
+import { getAuth, onAuthStateChanged, signOut, deleteUser } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-auth.js";
+import {
+  getFirestore, doc, getDoc, collection, query, where, getDocs,
+  onSnapshot, addDoc, setDoc, serverTimestamp, updateDoc, arrayUnion, deleteDoc
+} from "https://www.gstatic.com/firebasejs/12.3.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDwrZVBhR0VSbkbiktvkOsW3iSYJ6PFJ9A",
+  authDomain: "swapskill.web.app",
+  projectId: "swapskill-6e456"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+// --- IN-APP PUSH NOTIFICATION LOGIC ---
+const slideToast = document.getElementById('slideToast');
+let slideTimeout;
+
+function showPushNotification(title, desc, icon = "🔔") {
+    document.getElementById('slideToastTitle').textContent = title;
+    document.getElementById('slideToastDesc').textContent = desc;
+    document.getElementById('slideToastIcon').textContent = icon;
+    
+    slideToast.classList.add('show');
+    
+    // Auto-hide after 5 seconds
+    clearTimeout(slideTimeout);
+    slideTimeout = setTimeout(() => {
+        slideToast.classList.remove('show');
+    }, 5000);
+}
+
+// --- NOTIFICATION BELL SYSTEM ---
+const notifBtn = document.getElementById('notifBtn');
+const notifDropdown = document.getElementById('notifDropdown');
+const notifBadge = document.getElementById('notifBadge');
+const notifList = document.getElementById('notifList');
+
+notifBtn.onclick = (e) => { e.stopPropagation(); notifDropdown.style.display = notifDropdown.style.display === 'block' ? 'none' : 'block'; };
+window.addEventListener('click', () => notifDropdown.style.display = 'none');
+
+let initialLoadPending = true;
+let initialLoadAccepted = true;
+
+function subscribeNotifications(uid) {
+    // 1. Listen for Incoming PENDING Requests
+    const qPending = query(collection(db, 'requests'), where('receiverId', '==', uid), where('status', '==', 'pending'));
+    onSnapshot(qPending, snap => {
+        const count = snap.size;
+        if (count > 0) { notifBadge.style.display = 'block'; notifBadge.innerText = count; } 
+        else { notifBadge.style.display = 'none'; }
+
+        notifList.innerHTML = '';
+        if (count === 0) {
+            notifList.innerHTML = '<div style="padding:15px;text-align:center;color:#64748b;font-size:12px;">No new notifications</div>';
+        } else {
+            snap.forEach(d => {
+                const r = d.data();
+                const item = document.createElement('div');
+                item.style.padding = '12px'; item.style.borderBottom = '1px solid rgba(255,255,255,0.05)'; item.style.cursor = 'pointer';
+                item.innerHTML = `
+                    <div style="font-size:13px;color:#fff;"><b>${r.senderName || "A user"}</b> sent a request</div>
+                    <div style="font-size:11px;color:#94a3b8;">Wants to learn: ${r.skillRequested || "Skill Swap"}</div>
+                `;
+                item.onclick = () => window.location.replace('request.html');
+                notifList.appendChild(item);
+            });
+        }
+
+        // Trigger Pop-up Alert if it's a NEW request!
+        if (!initialLoadPending) {
+            snap.docChanges().forEach(change => {
+                if (change.type === 'added') {
+                    showPushNotification("New Swap Request!", `${change.doc.data().senderName} wants to learn ${change.doc.data().skillRequested}.`, "");
+                }
+            });
+        }
+    });
+
+    // 2. Listen for ACCEPTED Requests (When someone accepts the request you sent)
+    const qAccepted = query(collection(db, 'requests'), where('senderId', '==', uid), where('status', '==', 'accepted'));
+    onSnapshot(qAccepted, snap => {
+        if (!initialLoadAccepted) {
+            snap.docChanges().forEach(change => {
+                // If a document changes status to 'accepted', it triggers this notification
+                if (change.type === 'added') {
+                    showPushNotification("Request Accepted! ", `${change.doc.data().receiverName} accepted your request.`, "✅");
+                }
+            });
+        }
+    });
+
+    // Allow 2 seconds for initial database fetch, so old notifications don't trigger the slide-in alert
+    setTimeout(() => { initialLoadPending = false; initialLoadAccepted = false; }, 2000);
+}
+
+// --- CONSTANTS & HELPERS ---
+const IMGBB_KEY = "23e893979642fe669cef61faaac3c779";
+const toastEl = document.getElementById('toast');
+const avatarEl = document.getElementById('avatarEl');
+const nameEl = document.getElementById('nameEl');
+const usernameEl = document.getElementById('usernameEl');
+const bioEl = document.getElementById('bioEl');
+const requestsList = document.getElementById('requestsList');
+const sessionsList = document.getElementById('sessionsList');
+const tagsContainer = document.getElementById('skillTags');
+
+let currentUID = null;
+let myData = null;
+
+function toast(msg){
+  toastEl.textContent = msg; toastEl.classList.add('show');
+  setTimeout(()=> toastEl.classList.remove('show'), 3000);
+}
+
+// --- AUTOMATIC PRESENCE SYSTEM ---
+async function updatePresence(isOnline) {
+    if (!currentUID) return;
+    try {
+        await updateDoc(doc(db, 'users', currentUID), { isAvailable: isOnline });
+        const dot = document.getElementById('statusDot');
+        if (dot) {
+            if (isOnline) {
+                dot.classList.remove('offline');
+                dot.title = "Online";
+            } else {
+                dot.classList.add('offline');
+                dot.title = "Offline / Away";
+            }
+        }
+    } catch (e) { console.error("Presence error:", e); }
+}
+
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') { updatePresence(true); } else { updatePresence(false); }
+});
+window.addEventListener('beforeunload', () => { updatePresence(false); });
+
+// --- AVATAR LOGIC ---
+const avatarModal = document.getElementById('avatarModal');
+const avatarGrid = document.getElementById('avatarGrid');
+const historyGrid = document.getElementById('historyGrid');
+const historySection = document.getElementById('historySection');
+const fileInput = document.getElementById('customUploadInput');
+const triggerUploadBtn = document.getElementById('triggerUploadBtn');
+const uploadStatus = document.getElementById('uploadStatus');
+
+function addToGrid(src, container) {
+  const img = document.createElement('img'); img.src = src;
+  img.onclick = async ()=>{
+    if(currentUID){
+      await updateDoc(doc(db,'users',currentUID), { avatarUrl: src });
+      toast('Avatar Updated'); avatarModal.classList.remove('show'); location.reload(); 
+    }
+  };
+  container.appendChild(img);
+}
+
+const DEFAULT_AVATARS = ['avatars/a1.png', 'avatars/a2.png', 'avatars/a3.png', 'avatars/a4.png', 'avatars/a5.png', 'avatars/a6.png', 'avatars/a7.png', 'avatars/a8.png'];
+DEFAULT_AVATARS.forEach(src => addToGrid(src, avatarGrid));
+
+triggerUploadBtn.onclick = () => fileInput.click();
+fileInput.onchange = async (e) => {
+    const file = e.target.files[0];
+    if(!file) return;
+    uploadStatus.style.display = 'block'; triggerUploadBtn.disabled = true; triggerUploadBtn.textContent = "Uploading...";
+    const formData = new FormData(); formData.append("image", file);
+    try {
+        const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_KEY}`, { method: "POST", body: formData });
+        const data = await res.json();
+        if(data.success) {
+            const newUrl = data.data.url;
+            await updateDoc(doc(db, 'users', currentUID), { avatarUrl: newUrl, avatarHistory: arrayUnion(newUrl) });
+            toast("Profile Picture Uploaded!"); avatarModal.classList.remove('show'); location.reload();
+        } else { throw new Error("Upload failed"); }
+    } catch (err) { console.error(err); toast("Upload Failed."); } 
+    finally { uploadStatus.style.display = 'none'; triggerUploadBtn.disabled = false; triggerUploadBtn.textContent = "📁 Select from Device"; fileInput.value = ""; }
+};
+
+document.getElementById('chooseAvatarBtn').onclick = () => {
+    if(myData && myData.avatarHistory && myData.avatarHistory.length > 0) {
+        historyGrid.innerHTML = ''; historySection.style.display = 'block';
+        [...myData.avatarHistory].reverse().forEach(src => addToGrid(src, historyGrid));
+    } else { historySection.style.display = 'none'; }
+    avatarModal.classList.add('show');
+};
+document.getElementById('closeAvatarModal').onclick = () => avatarModal.classList.remove('show');
+
+// --- MAIN APP LOGIC ---
+onAuthStateChanged(auth, async (user)=>{
+  if(!user) return window.location.replace('login.html');
+  currentUID = user.uid;
+  
+  updatePresence(true);
+  subscribeNotifications(currentUID);
+  loadProfile(); subscribeIncomingRequests(); subscribeSessions();
+});
+
+document.getElementById('logoutBtn').addEventListener('click', async () => {
+  try { await updatePresence(false); await signOut(auth); window.location.replace('login.html'); } catch (err) { toast("Logout failed."); }
+});
+
+function loadProfile(){
+  onSnapshot(doc(db,'users',currentUID), async snap=>{
+    if(!snap.exists()) return window.location.replace('userprofile.html');
+    myData = snap.data();
+
+    if(myData.isBanned === true) {
+        const banReason = myData.banReason || "Violation of Community Guidelines";
+        document.body.innerHTML = `
+            <div style="height:100vh;width:100vw;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#0f172a;color:#ef4444;text-align:center;font-family:system-ui;padding:20px;">
+                <div style="font-size:60px;margin-bottom:10px;">🚫</div>
+                <h2 style="color:white;margin:0;">Account Suspended</h2>
+                <p style="color:#94a3b8;margin-top:5px;max-width:400px;font-size:14px;">Reason: <strong style="color:#fff">${banReason}</strong></p>
+                <button onclick="location.reload()" style="background:transparent;color:#64748b;border:1px solid #334155;padding:8px 16px;border-radius:8px;margin-top:20px;cursor:pointer;font-size:12px;">Refresh</button>
+            </div>`;
+        return; 
+    }
+
+    nameEl.innerHTML = (myData.name || 'User') + (myData.verified ? ' <span class="verified-badge" title="Verified Student">☑</span>' : '') + `<span class="status-dot ${myData.isAvailable ? '' : 'offline'}" id="statusDot" title="${myData.isAvailable ? 'Online' : 'Offline / Away'}"></span>`;
+    usernameEl.textContent = myData.username ? '@'+myData.username : '';
+    bioEl.textContent = myData.bio || 'No bio added.';
+    
+    tagsContainer.innerHTML = '';
+    if(myData.skillsOffered && myData.skillsOffered.length > 0){
+        myData.skillsOffered.slice(0, 3).forEach(skill => {
+            const span = document.createElement('span'); span.className = 'skill-tag'; span.textContent = skill; tagsContainer.appendChild(span);
+        });
+    }
+    
+    if(myData.avatarUrl) { avatarEl.innerHTML = `<img src="${myData.avatarUrl}" style="width:100%;height:100%;object-fit:cover;">`; } 
+    else { avatarEl.innerHTML = (myData.name || 'U').charAt(0).toUpperCase(); }
+    
+    const score = myData.score || 0;
+    document.getElementById('scoreEl').textContent = score.toFixed(1);
+    document.getElementById('levelEl').textContent = score > 4 ? 'Expert' : (score > 2 ? 'Intermediate' : 'Beginner');
+  });
+}
+
+function subscribeIncomingRequests(){
+  const q = query(collection(db,'requests'), where('receiverId','==',currentUID), where('status','==','pending'));
+  onSnapshot(q, (qs)=>{
+    document.getElementById('pendingCount').textContent = qs.size; 
+    
+    requestsList.innerHTML = '';
+    if(qs.empty) { requestsList.innerHTML = '<div style="padding:20px;text-align:center;color:#64748b;font-size:14px">No incoming requests right now.</div>'; return; }
+    
+    qs.forEach(docSnap=>{
+      const r = docSnap.data();
+      const div = document.createElement('div'); div.className='list-item';
+      const senderImg = r.senderAvatarUrl ? `<img class="item-avatar" src="${r.senderAvatarUrl}">` : `<div class="item-avatar" style="display:flex;align-items:center;justify-content:center;color:#fff">${(r.senderName||'U').charAt(0)}</div>`;
+      
+      const reqDataStr = encodeURIComponent(JSON.stringify({ id: docSnap.id, senderEmail: r.senderEmail, senderName: r.senderName, skill: r.skillRequested }));
+      
+      div.innerHTML = `
+        <div class="item-left">${senderImg}
+          <div class="item-info"><b>${r.senderName}</b><span>wants to learn <b>${r.skillRequested || "Skill"}</b></span></div>
+        </div>
+        <div>
+          <button class="btn btn-success" style="font-size:11px;padding:6px 12px;margin-right:4px" onclick="acceptRequest('${reqDataStr}')">Accept</button>
+          <button class="btn btn-ghost" style="font-size:11px;padding:6px 12px;color:#ef4444;border-color:rgba(239,68,68,0.3)" onclick="rejectRequest('${docSnap.id}')">Reject</button>
+        </div>`;
+      requestsList.appendChild(div);
+    });
+  });
+}
+
+window.acceptRequest = async (reqDataStr) => {
+    const req = JSON.parse(decodeURIComponent(reqDataStr));
+    try {
+        await updateDoc(doc(db, 'requests', req.id), { status: 'accepted', acceptedAt: serverTimestamp() });
+        if (req.senderEmail) {
+            try {
+                await emailjs.send("service_ae1iubu", "template_sj4ee1o", {
+                    to_email: req.senderEmail, to_name: req.senderName, from_name: myData.name || "A User",
+                    message: `Good news! Your request for ${req.skill} has been accepted. Log in to start your video session.`,
+                    skill: req.skill
+                });
+            } catch(e) { console.warn("Accept email failed.", e); }
+        }
+        toast('Request Accepted!');
+    } catch (e) { console.error(e); alert("Failed to accept."); }
+};
+
+window.rejectRequest = async (id) => {
+    if(!confirm("Decline this request?")) return;
+    await updateDoc(doc(db,'requests',id), {status:'rejected'});
+};
+
+function subscribeSessions(){
+  sessionsList.innerHTML = '<div style="color:#64748b;text-align:center;padding:20px;font-size:14px">Loading sessions...</div>';
+  
+  const q1 = query(collection(db,'requests'), where('receiverId','==',currentUID), where('status','==','accepted'));
+  const q2 = query(collection(db,'requests'), where('senderId','==',currentUID), where('status','==','accepted'));
+  
+  let recvDocs = [];
+  let sentDocs = [];
+
+  const renderSessions = () => {
+      const allDocs = [...recvDocs, ...sentDocs];
+      document.getElementById('acceptedCount').textContent = allDocs.length; 
+
+      sessionsList.innerHTML = '';
+      if(allDocs.length === 0) { sessionsList.innerHTML='<div style="padding:10px;text-align:center;color:#64748b;font-size:13px">No active sessions. Accept a request or send one!</div>'; return; }
+      
+      allDocs.forEach(s => {
+        const div = document.createElement('div'); div.className='list-item';
+        const partnerName = s.role === 'caller' ? s.receiverName : s.senderName;
+        const avHtml = `<div class="item-avatar" style="display:flex;align-items:center;justify-content:center;color:#fff">${(partnerName||'U').charAt(0)}</div>`;
+
+        div.innerHTML = `
+            <div class="item-left">${avHtml}
+                <div class="item-info"><b>${s.skillRequested || "Skill Swap"}</b>
+                <span style="color:#22c55e; font-size:11px;">● Scheduled with ${partnerName || "Partner"}</span></div>
+            </div>
+            <button class="btn btn-primary" onclick="location.replace('session.html?req=${s.id}&role=${s.role}')">Join Video</button>`;
+        sessionsList.appendChild(div);
+      });
+  };
+
+  onSnapshot(q1, snap => { recvDocs = snap.docs.map(d => ({ id: d.id, role: 'answerer', ...d.data() })); renderSessions(); });
+  onSnapshot(q2, snap => { sentDocs = snap.docs.map(d => ({ id: d.id, role: 'caller', ...d.data() })); renderSessions(); });
+}
+
+document.getElementById('deleteAccBtn').addEventListener('click', async () => {
+    const confirm1 = confirm("⚠️ ARE YOU SURE?\n\nThis will permanently delete your account, profile, and chat history. This cannot be undone.");
+    if (!confirm1) return;
+    const confirm2 = confirm("Last Chance: Do you really want to delete your account?");
+    if (!confirm2) return;
+
+    const user = auth.currentUser;
+    const btn = document.getElementById('deleteAccBtn');
+    btn.textContent = "Deleting..."; btn.disabled = true;
+
+    try {
+        await deleteDoc(doc(db, "users", user.uid));
+        await deleteUser(user);
+        alert("Account deleted successfully.");
+        window.location.replace("signup.html");
+    } catch (error) {
+        if (error.code === 'auth/requires-recent-login') {
+            alert("Security Alert: To delete your account, you must have logged in recently.\n\nPlease Log Out and Log In again, then try deleting.");
+            await signOut(auth); window.location.replace("login.html");
+        } else {
+            alert("Error deleting account: " + error.message);
+            btn.textContent = "🗑️ Delete Account"; btn.disabled = false;
+        }
+    }
+});
+
+window.addEventListener('offline', ()=>document.getElementById('offlineBar').style.display='block');
+window.addEventListener('online', ()=>document.getElementById('offlineBar').style.display='none');
+</script>
+</body>
+</html>
