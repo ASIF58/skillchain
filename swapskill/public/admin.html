@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Admin Portal — SwapSkill</title>
+<link rel="icon" type="image/png" href="/logo.png">
+<style>
+:root {
+  --primary: #3b82f6; --success: #22c55e; --danger: #ef4444; --warning: #f59e0b;
+  --bg: #0f172a; --panel: #1e293b; --text: #f8fafc; --border: rgba(255, 255, 255, 0.1);
+  --glass: rgba(30, 41, 59, 0.7);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
+body { background: radial-gradient(circle at top right, #1e293b, #0f172a); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; }
+
+/* LOGIN */
+.login-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.95); display: flex; justify-content: center; align-items: center; z-index: 1000; }
+.login-box { background: var(--panel); width: 350px; padding: 40px; border-radius: 20px; border: 1px solid var(--border); text-align: center; }
+.login-box h2 { margin-bottom: 20px; color: #fff; }
+.login-input { width: 100%; padding: 12px; margin: 8px 0; background: rgba(0,0,0,0.3); border: 1px solid var(--border); border-radius: 8px; color: #fff; outline: none; }
+.login-btn { width: 100%; padding: 12px; margin-top: 15px; background: var(--primary); border: none; color: white; font-weight: bold; border-radius: 8px; cursor: pointer; }
+.error-msg { color: var(--danger); margin-top: 10px; font-size: 13px; min-height: 20px; }
+
+/* APP */
+.app-container { display: none; height: 100vh; display: flex; flex-direction: column; }
+header { background: rgba(15, 23, 42, 0.9); border-bottom: 1px solid var(--border); padding: 0 20px; height: 60px; display: flex; align-items: center; justify-content: space-between; }
+.brand { font-weight: 800; font-size: 18px; color: #fff; }
+.sidebar { width: 250px; background: rgba(30, 41, 59, 0.4); border-right: 1px solid var(--border); display: flex; flex-direction: column; padding: 20px 0; }
+.nav-item { padding: 12px 20px; cursor: pointer; color: #94a3b8; font-size: 14px; display: flex; gap: 10px; }
+.nav-item.active { color: var(--primary); background: rgba(59,130,246,0.1); border-right: 3px solid var(--primary); }
+.content-area { flex: 1; padding: 30px; overflow-y: auto; }
+.section { display: none; } .section.active { display: block; }
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; }
+.stat-card { background: var(--glass); border: 1px solid var(--border); padding: 20px; border-radius: 16px; }
+.stat-val { font-size: 28px; font-weight: 800; color: #fff; }
+.table-container { background: var(--glass); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; margin-top: 20px; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th { background: rgba(0,0,0,0.3); color: #94a3b8; text-align: left; padding: 12px 16px; }
+td { border-bottom: 1px solid var(--border); padding: 12px 16px; color: #e2e8f0; vertical-align: top; }
+.status-badge { padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; display: inline-block;}
+.st-active { background: rgba(34,197,94,0.1); color: #4ade80; }
+.st-banned { background: rgba(239,68,68,0.1); color: #f87171; }
+.action-btn { padding: 4px 8px; border-radius: 6px; font-size: 11px; cursor: pointer; border: 1px solid var(--border); background: transparent; color: #cbd5e1; margin-right: 4px; }
+.action-btn:hover { background: rgba(255,255,255,0.1); color: white; }
+</style>
+</head>
+<body>
+
+<div id="loginOverlay" class="login-overlay">
+  <div class="login-box">
+    <h2>Admin Portal</h2>
+    <input type="text" id="emailInput" class="login-input" placeholder="Email Address">
+    <input type="password" id="passwordInput" class="login-input" placeholder="Password">
+    <button id="loginBtn" class="login-btn">Login</button>
+    <div id="loginError" class="error-msg"></div>
+  </div>
+</div>
+
+<div id="app" class="app-container">
+  <header>
+    <div class="brand">SwapSkill Admin</div>
+    <button class="action-btn" id="logoutBtn">Logout</button>
+  </header>
+  <div style="flex:1; display:flex; overflow:hidden;">
+    <nav class="sidebar">
+      <div class="nav-item active" onclick="switchTab('dashboard')">📊 Dashboard</div>
+      <div class="nav-item" onclick="switchTab('users')">👥 Users</div>
+      <div class="nav-item" onclick="switchTab('appeals')">⚖️ Appeals</div>
+      <div class="nav-item" onclick="switchTab('reports')">🚩 Reports</div>
+      <div class="nav-item" onclick="switchTab('logs')">🛡️ Logs</div>
+    </nav>
+    <div class="content-area">
+      
+      <div id="tab-dashboard" class="section active">
+        <h2 style="margin-bottom:20px">Overview</h2>
+        <div class="stats-grid">
+          <div class="stat-card"><div class="stat-val" id="statUsers">0</div><div>Total Users</div></div>
+          <div class="stat-card"><div class="stat-val" id="statAppeals">0</div><div>Pending Appeals</div></div>
+          <div class="stat-card"><div class="stat-val" id="statReports">0</div><div>User Reports</div></div>
+          <div class="stat-card"><div class="stat-val" id="statLogs">0</div><div>Auto-Ban Logs</div></div>
+        </div>
+      </div>
+
+      <div id="tab-users" class="section">
+        <h2>User Management</h2>
+        <div class="table-container">
+          <table>
+            <thead><tr><th>User</th><th>Email</th><th>Status / Reason</th><th>Actions</th></tr></thead>
+            <tbody id="usersTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div id="tab-appeals" class="section">
+        <h2>Ban Appeals</h2>
+        <div class="table-container">
+          <table>
+            <thead><tr><th>User</th><th>Reason</th><th>Date</th><th>Decision</th></tr></thead>
+            <tbody id="appealsTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div id="tab-reports" class="section">
+        <h2>User Reports</h2>
+        <div class="table-container">
+          <table>
+            <thead><tr><th>From</th><th>Category</th><th>Message</th><th>Action</th></tr></thead>
+            <tbody id="reportsTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div id="tab-logs" class="section">
+        <h2>Moderation Logs (Auto-Bans)</h2>
+        <div class="table-container">
+          <table>
+            <thead><tr><th>User</th><th>Bad Word</th><th>Time</th></tr></thead>
+            <tbody id="logsTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-auth.js";
+import { getFirestore, collection, getDocs, query, where, orderBy, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDwrZVBhR0VSbkbiktvkOsW3iSYJ6PFJ9A",
+  authDomain: "swapskill.web.app",
+  projectId: "swapskill-6e456",
+  storageBucket: "swapskill-6e456.firebasestorage.app",
+  messagingSenderId: "692315602994",
+  appId: "1:692315602994:web:65cd15b1eafe9d7d133c2b"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+// AUTH CHECK
+onAuthStateChanged(auth, user => {
+    if(user && user.email === "swapskill.project@gmail.com") {
+        document.getElementById("loginOverlay").style.display = 'none';
+        document.getElementById("app").style.display = 'flex';
+        initDashboard();
+    } else {
+        document.getElementById("loginOverlay").style.display = 'flex';
+        document.getElementById("app").style.display = 'none';
+    }
+});
+
+// LOGIN
+document.getElementById("loginBtn").onclick = async () => {
+    const e = document.getElementById("emailInput").value.trim();
+    const p = document.getElementById("passwordInput").value.trim();
+    if(!e || !p) return document.getElementById("loginError").innerText = "Fill all fields";
+    try { await signInWithEmailAndPassword(auth, e, p); } 
+    catch(err) { document.getElementById("loginError").innerText = "Login Failed: " + err.message; }
+};
+document.getElementById("logoutBtn").onclick = () => signOut(auth);
+
+// TABS
+window.switchTab = (tab) => {
+    document.querySelectorAll('.section').forEach(e => e.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(e => e.classList.remove('active'));
+    document.getElementById(`tab-${tab}`).classList.add('active');
+    event.target.classList.add('active');
+};
+
+async function initDashboard() {
+    loadUsers();
+    loadAppeals();
+    loadReports();
+    loadLogs();
+}
+
+// 1. USERS (UPDATED WITH BAN REASON)
+async function loadUsers() {
+    const snap = await getDocs(collection(db, "users"));
+    const tbody = document.getElementById("usersTableBody");
+    tbody.innerHTML = "";
+    document.getElementById("statUsers").innerText = snap.size;
+    
+    snap.forEach(d => {
+        const u = d.data();
+        const tr = document.createElement("tr");
+        const isBanned = u.isBanned || false;
+        const banReason = u.banReason || "Reason not specified";
+        
+        // Status Column Logic
+        let statusHtml = `<span class="status-badge st-active">Active</span>`;
+        if (isBanned) {
+            statusHtml = `
+                <span class="status-badge st-banned">Banned</span>
+                <div style="font-size:11px; color:#ef4444; margin-top:4px;">
+                    ⚠️ ${banReason}
+                </div>
+            `;
+        }
+
+        tr.innerHTML = `
+            <td>${u.name} ${u.verified ? '☑' : ''}</td>
+            <td>${u.email}</td>
+            <td>${statusHtml}</td>
+            <td>
+                <button class="action-btn" onclick="toggleVerify('${d.id}', ${u.verified})">${u.verified?'Unverify':'Verify'}</button>
+                <button class="action-btn" style="color:${isBanned?'#22c55e':'#ef4444'}" onclick="toggleBan('${d.id}', ${isBanned})">${isBanned?'Unban':'Ban'}</button>
+                <button class="action-btn" onclick="delUser('${d.id}')">🗑</button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+// 2. APPEALS
+async function loadAppeals() {
+    const q = query(collection(db, "appeals"), where("status", "==", "pending"));
+    const snap = await getDocs(q);
+    const tbody = document.getElementById("appealsTableBody");
+    tbody.innerHTML = "";
+    document.getElementById("statAppeals").innerText = snap.size;
+
+    if(snap.empty) {
+        tbody.innerHTML = "<tr><td colspan='4' style='text-align:center;padding:20px;color:#64748b'>No pending appeals</td></tr>";
+        return;
+    }
+
+    snap.forEach(d => {
+        const a = d.data();
+        const date = a.createdAt ? new Date(a.createdAt.toDate()).toLocaleDateString() : '-';
+        
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+            <td>${a.userName}<br><span style="font-size:11px;color:#94a3b8">${a.email}</span></td>
+            <td style="max-width:300px;overflow:hidden;text-overflow:ellipsis;">${a.reason}</td>
+            <td>${date}</td>
+            <td>
+                <button class="action-btn" style="color:#22c55e;border-color:#22c55e" onclick="resolveAppeal('${d.id}', '${a.userId}', true)">Approve</button>
+                <button class="action-btn" style="color:#ef4444;border-color:#ef4444" onclick="resolveAppeal('${d.id}', '${a.userId}', false)">Reject</button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+// 3. REPORTS
+async function loadReports() {
+    const snap = await getDocs(query(collection(db, "userreport"), orderBy("createdAt", "desc")));
+    const tbody = document.getElementById("reportsTableBody");
+    tbody.innerHTML = "";
+    document.getElementById("statReports").innerText = snap.size;
+
+    snap.forEach(d => {
+        const r = d.data();
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td>${r.email}</td><td>${r.category}</td><td>${r.message}</td><td><button class="action-btn" onclick="delReport('${d.id}')">Dismiss</button></td>`;
+        tbody.appendChild(tr);
+    });
+}
+
+// 4. MODERATION LOGS (NEW)
+async function loadLogs() {
+    const snap = await getDocs(query(collection(db, "moderation_logs"), orderBy("timestamp", "desc")));
+    const tbody = document.getElementById("logsTableBody");
+    tbody.innerHTML = "";
+    document.getElementById("statLogs").innerText = snap.size;
+
+    snap.forEach(d => {
+        const l = d.data();
+        const date = l.timestamp ? new Date(l.timestamp.toDate()).toLocaleString() : '-';
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+            <td>${l.userName}<br><span style="font-size:10px;color:#64748b">${l.userId}</span></td>
+            <td style="color:#f87171">"${l.originalText}"</td>
+            <td>${date}</td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+// --- GLOBAL ACTIONS ---
+window.toggleVerify = async (id, status) => { if(confirm("Change verification?")) { await updateDoc(doc(db, "users", id), {verified: !status}); loadUsers(); }};
+
+// --- UPDATED BAN LOGIC (Saves Reason) ---
+window.toggleBan = async (id, currentStatus) => { 
+    if (currentStatus) {
+        // UNBAN
+        if(!confirm("Unban this user?")) return;
+        await updateDoc(doc(db, "users", id), { 
+            isBanned: false, 
+            showUnbanWarning: true // Warns user on login
+        });
+    } else {
+        // BAN
+        const reason = prompt("Enter reason for banning (e.g. 'Abusive Language'):");
+        if (!reason) return; // Cancelled
+        
+        await updateDoc(doc(db, "users", id), { 
+            isBanned: true, 
+            banReason: reason 
+        });
+    }
+    loadUsers(); 
+};
+
+window.delUser = async (id) => { if(confirm("Delete user?")) { await deleteDoc(doc(db, "users", id)); loadUsers(); }};
+window.delReport = async (id) => { if(confirm("Dismiss report?")) { await deleteDoc(doc(db, "userreport", id)); loadReports(); }};
+
+window.resolveAppeal = async (appealId, userId, isApproved) => {
+    if(!confirm(isApproved ? "Approve appeal and UNBAN user?" : "Reject appeal and KEEP ban?")) return;
+
+    await updateDoc(doc(db, "appeals", appealId), { status: isApproved ? 'approved' : 'rejected' });
+
+    if(isApproved) {
+        await updateDoc(doc(db, "users", userId), { 
+            isBanned: false,
+            showUnbanWarning: true 
+        });
+    }
+
+    alert(isApproved ? "User Unbanned." : "Appeal Rejected.");
+    loadAppeals();
+    loadUsers();
+};
+
+</script>
+</body>
+</html>

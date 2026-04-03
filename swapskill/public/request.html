@@ -1,0 +1,615 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Discover & Requests — SwapSkill</title>
+  <link rel="icon" type="image/png" href="/logo.png">
+  
+  <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
+  <script>emailjs.init("QWgG6h3s9AuU-du3B");</script>
+
+  <style>
+    :root {
+      --primary: #3b82f6; --success: #22c55e; --danger: #ef4444; 
+      --bg: #0f172a; --panel: #1e293b; --text: #f8fafc; --border: rgba(255, 255, 255, 0.1);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
+
+    body {
+      background: radial-gradient(circle at top right, #1e293b, #0f172a);
+      color: var(--text); min-height: 100vh; display: flex; flex-direction: column;
+    }
+
+    /* --- Unified Header --- */
+    header {
+      position: sticky; top: 0; z-index: 50; background: rgba(15, 23, 42, 0.95);
+      backdrop-filter: blur(12px); border-bottom: 1px solid var(--border);
+      padding: 12px 16px; display: flex; align-items: center; justify-content: space-between;
+    }
+    .brand { 
+      font-size: 18px; font-weight: 800; 
+      background: linear-gradient(90deg, #60a5fa, #3b82f6); 
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; 
+      text-decoration: none;
+    }
+    .header-right { display: flex; gap: 8px; align-items: center; }
+    
+    .btn { padding: 8px 14px; border-radius: 10px; border: none; font-size: 13px; font-weight: 600; cursor: pointer; transition: 0.2s; text-decoration:none; display:inline-flex; align-items:center; justify-content:center; white-space: nowrap;}
+    .btn-ghost { background: rgba(255,255,255,0.08); color: #cbd5e1; border: 1px solid var(--border); }
+    .btn-ghost:hover { background: rgba(255,255,255,0.15); color: #fff; }
+    .btn-primary { background: var(--primary); color: #fff; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4); }
+    .btn-primary:hover { background: #2563eb; transform: translateY(-1px); }
+    .btn-success { background: var(--success); color: #fff; box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3); }
+    .btn-danger { background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2); }
+
+    /* --- Scrollable Tabs --- */
+    .tabs-container { 
+        display: flex; justify-content: center; margin: 20px 0 10px; padding: 0 16px; 
+        overflow-x: auto; 
+    }
+    .tabs-container::-webkit-scrollbar { display: none; } 
+    .tabs-container { -ms-overflow-style: none; scrollbar-width: none; }
+
+    .tabs { background: rgba(0,0,0,0.2); padding: 4px; border-radius: 24px; display: flex; gap: 4px; border: 1px solid var(--border); min-width: max-content; }
+    .tab { padding: 10px 24px; border-radius: 20px; cursor: pointer; font-size: 14px; color: #94a3b8; transition: 0.2s; white-space: nowrap; }
+    .tab:hover { color: #fff; }
+    .tab.active { background: var(--primary); color: #fff; font-weight: 600; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+
+    /* --- Search Bar --- */
+    .search-wrapper { max-width: 800px; margin: 0 auto 20px; padding: 0 20px; width: 100%; display: none; }
+    .search-input { width: 100%; padding: 14px 20px; border-radius: 16px; border: 1px solid var(--border); background: var(--panel); color: #fff; font-size: 15px; outline: none; }
+    .search-input:focus { border-color: var(--primary); }
+
+    /* --- List --- */
+    .container { max-width: 800px; margin: 0 auto; padding: 0 20px; width: 100%; padding-bottom: 40px;}
+    
+    .card {
+      background: rgba(30, 41, 59, 0.6); backdrop-filter: blur(10px);
+      border: 1px solid var(--border); border-radius: 16px; padding: 20px;
+      margin-bottom: 16px; display: flex; align-items: center; gap: 16px; transition: 0.2s;
+    }
+    .card:hover { transform: translateY(-2px); border-color: rgba(255,255,255,0.2); }
+    
+    .avatar { width: 64px; height: 64px; border-radius: 50%; object-fit: cover; background: #475569; border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 26px; font-weight: bold; color: white; flex-shrink: 0;}
+    .info { flex: 1; }
+    .name-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+    .name { font-size: 18px; font-weight: 700; color: #fff; display: flex; align-items: center;}
+    .score { background: rgba(245, 158, 11, 0.1); color: #f59e0b; font-size: 12px; padding: 2px 8px; border-radius: 12px; font-weight: bold; border: 1px solid rgba(245, 158, 11, 0.2);}
+    .skills-offered { font-size: 13px; color: #94a3b8; margin-bottom: 8px; }
+    .skill-tag { display: inline-block; background: rgba(59,130,246,0.15); color: #60a5fa; padding: 4px 10px; border-radius: 12px; font-size: 12px; margin-right: 6px; margin-bottom: 6px;}
+
+    .badge { font-size: 11px; padding: 4px 10px; border-radius: 20px; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 8px; display: inline-block;}
+    .badge.outgoing { background: rgba(59,130,246,0.1); color: #60a5fa; border: 1px solid rgba(59,130,246,0.2); }
+    .badge.incoming { background: rgba(16,185,129,0.1); color: #34d399; border: 1px solid rgba(16,185,129,0.2); }
+    .badge.rejected { background: rgba(239,68,68,0.1); color: #ef4444; border: 1px solid rgba(239,68,68,0.2); }
+
+    /* Online Status Indicator */
+    .status-dot {
+        width: 10px; height: 10px; background: var(--success); border-radius: 50%; 
+        display: inline-block; box-shadow: 0 0 8px rgba(34, 197, 94, 0.8); margin-left: 6px;
+        transition: 0.3s;
+    }
+    .status-dot.offline { background: #64748b; box-shadow: none; }
+
+    .empty-msg { text-align: center; color: #64748b; margin-top: 40px; font-size: 15px; }
+
+    /* Modal */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 100; display: none; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
+    .modal-box { background: var(--panel); border: 1px solid var(--border); width: 90%; max-width: 400px; padding: 24px; border-radius: 20px; }
+    .modal-title { color: white; font-size: 20px; font-weight: bold; margin-bottom: 10px; }
+    .modal-desc { color: #94a3b8; font-size: 14px; margin-bottom: 20px; }
+    .modal-select { width: 100%; padding: 14px; background: rgba(0,0,0,0.3); border: 1px solid var(--border); color: white; border-radius: 12px; margin-bottom: 24px; font-size: 16px; outline: none; }
+    .modal-actions { display: flex; gap: 12px; }
+    .btn-full { flex: 1; padding: 12px; border-radius: 12px; font-weight: 600; border: none; cursor: pointer; font-size: 14px; }
+
+    @media(max-width: 900px){
+      header { padding: 10px 14px; } .header-right { gap: 6px; } .btn-ghost { padding: 6px 10px; font-size: 11px; } .brand { font-size: 16px; }
+      .card { flex-direction: column; align-items: flex-start; text-align: left;}
+      .card .btn { width: 100%; margin-top: 10px; text-align: center;}
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <a href="#" onclick="window.location.replace('dashboard.html'); return false;" class="brand">SwapSkill</a>
+  <div class="header-right">
+    <div class="notif-wrapper" style="position:relative;">
+        <button id="notifBtn" style="background:none;border:none;font-size:20px;cursor:pointer;color:#fff;">🔔</button>
+        <div id="notifBadge" style="position:absolute;top:-5px;right:-5px;background:#ef4444;color:white;font-size:10px;padding:2px 5px;border-radius:50%;display:none;">0</div>
+        <div id="notifDropdown" style="position:absolute;top:30px;right:0;width:250px;background:#1e293b;border:1px solid rgba(255,255,255,0.1);border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,0.5);display:none;z-index:100;overflow:hidden;">
+            <div id="notifList" style="max-height:300px;overflow-y:auto;">
+                <div style="padding:15px;text-align:center;color:#64748b;font-size:12px;">No new notifications</div>
+            </div>
+        </div>
+    </div>
+    <a href="#" onclick="window.location.replace('dashboard.html'); return false;" class="btn btn-ghost">Dashboard</a>
+    <a href="#" onclick="window.location.replace('chat.html'); return false;" class="btn btn-primary">Messages</a>
+    <button class="btn btn-ghost" style="color:#ef4444;" id="logoutBtn">Exit</button>
+  </div>
+</header>
+
+<div class="tabs-container">
+  <div class="tabs">
+    <div class="tab active" id="tabDiscover">Discover</div>
+    <div class="tab" id="tabPending">Pending</div>
+    <div class="tab" id="tabAccepted">Accepted</div>
+    <div class="tab" id="tabRejected">Rejected</div>
+  </div>
+</div>
+
+<div class="search-wrapper" id="searchWrapper">
+    <input type="text" id="skillSearch" class="search-input" placeholder="Search for skills (e.g. Java, Python)...">
+</div>
+
+<div class="container" id="contentContainer">
+  <div class="empty-msg">Loading...</div>
+</div>
+
+<div class="modal-overlay" id="requestModal">
+    <div class="modal-box">
+        <div class="modal-title">Request Swap</div>
+        <div class="modal-desc">Set up your skill exchange with <b id="modalTargetName">User</b>.</div>
+        
+        <label style="font-size:13px; color:#cbd5e1; margin-bottom:8px; display:block;">I want to learn from them:</label>
+        <select id="requestSkillSelect" class="modal-select">
+            </select>
+
+        <label style="font-size:13px; color:#cbd5e1; margin-bottom:8px; display:block;">I will teach them:</label>
+        <input type="text" id="offerSkillInput" class="modal-select" placeholder="e.g. Graphic Design, Python...">
+
+        <div class="modal-actions">
+            <button class="btn-full" style="background:transparent; border:1px solid #64748b; color:#cbd5e1" onclick="closeModal()">Cancel</button>
+            <button class="btn-full btn-primary" id="confirmRequestBtn">Send Request</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="expiredModal">
+    <div class="modal-box" style="text-align: center;">
+        <div style="font-size: 50px; margin-bottom: 10px;">⏰</div>
+        <div class="modal-title">Request Expired</div>
+        <div class="modal-desc" style="margin-bottom: 24px; line-height: 1.5;">
+            Your pending request to <b id="expiredTargetName" style="color: #fff;">User</b> was not accepted within 24 hours and has been automatically removed. 
+            <br><br>You can browse and send them a new request if you'd like.
+        </div>
+        <button class="btn btn-primary" style="width: 100%; padding: 12px; border-radius: 12px; font-size: 16px;" onclick="document.getElementById('expiredModal').style.display='none'">Understood</button>
+    </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js";
+import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-auth.js";
+import { getFirestore, collection, query, where, getDocs, doc, updateDoc, addDoc, serverTimestamp, getDoc, onSnapshot, deleteDoc } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-firestore.js";
+
+const firebaseConfig={apiKey:"AIzaSyDwrZVBhR0VSbkbiktvkOsW3iSYJ6PFJ9A",authDomain:"swapskill.web.app",projectId:"swapskill-6e456"};
+const app=initializeApp(firebaseConfig);
+const auth=getAuth(app);
+const db=getFirestore(app);
+
+let currentUser = null;
+let myData = null;
+let allUsersCache = [];
+let allRequests = [];
+let targetUserForRequest = null;
+
+const ui = {
+    content: document.getElementById('contentContainer'),
+    searchWrapper: document.getElementById('searchWrapper'),
+    searchInput: document.getElementById('skillSearch'),
+    modal: document.getElementById('requestModal'),
+    modalName: document.getElementById('modalTargetName'),
+    modalSelect: document.getElementById('requestSkillSelect'),
+    confirmBtn: document.getElementById('confirmRequestBtn')
+};
+
+// --- BULLETPROOF BROWSER BACK BUTTON HIJACK ---
+history.pushState(null, document.title, location.href);
+window.addEventListener('popstate', function (event) {
+  history.pushState(null, document.title, location.href);
+  window.location.replace('dashboard.html');
+});
+
+// --- NOTIFICATIONS & HEADER LOGIC ---
+const notifBtn = document.getElementById('notifBtn');
+const notifDropdown = document.getElementById('notifDropdown');
+const notifBadge = document.getElementById('notifBadge');
+const notifList = document.getElementById('notifList');
+
+notifBtn.onclick = (e) => { e.stopPropagation(); notifDropdown.style.display = notifDropdown.style.display === 'block' ? 'none' : 'block'; };
+window.addEventListener('click', () => notifDropdown.style.display = 'none');
+
+document.getElementById('logoutBtn').addEventListener('click', async () => {
+  try { await signOut(auth); window.location.replace('login.html'); } catch (err) { alert("Logout failed."); }
+});
+
+function subscribeNotifications(uid) {
+    const q = query(collection(db, 'requests'), where('receiverId', '==', uid), where('status', '==', 'pending'));
+    onSnapshot(q, snap => {
+        const count = snap.size;
+        if (count > 0) { notifBadge.style.display = 'block'; notifBadge.innerText = count; } 
+        else { notifBadge.style.display = 'none'; }
+
+        notifList.innerHTML = '';
+        if (count === 0) {
+            notifList.innerHTML = '<div style="padding:15px;text-align:center;color:#64748b;font-size:12px;">No new notifications</div>';
+        } else {
+            snap.forEach(d => {
+                const r = d.data();
+                const item = document.createElement('div');
+                item.style.padding = '12px'; item.style.borderBottom = '1px solid rgba(255,255,255,0.05)'; item.style.cursor = 'pointer';
+                item.innerHTML = `
+                    <div style="font-size:13px;color:#fff;"><b>${r.senderName || "A user"}</b> sent a request</div>
+                    <div style="font-size:11px;color:#94a3b8;">Wants to learn: ${r.skillRequested || "Skill Swap"}</div>
+                `;
+                item.onclick = () => { activateTab('pending'); notifDropdown.style.display = 'none'; };
+                notifList.appendChild(item);
+            });
+        }
+    });
+}
+
+onAuthStateChanged(auth, async user => {
+  if(!user) return location.replace('login.html');
+  currentUser = user;
+  
+  const myDoc = await getDoc(doc(db, 'users', user.uid));
+  if(myDoc.exists()) {
+      myData = myDoc.data();
+      if(myData.isBanned) return window.location.replace('dashboard.html'); 
+  }
+
+  subscribeNotifications(user.uid);
+  await Promise.all([ fetchAllUsers(), loadRequests() ]);
+  activateTab('discover');
+});
+
+// --- FETCH DATA ---
+async function fetchAllUsers() {
+    const snap = await getDocs(collection(db, 'users'));
+    allUsersCache = [];
+    snap.forEach(d => {
+        if(d.id !== currentUser.uid && !d.data().isBanned) {
+            if (myData && myData.blockedUsers && myData.blockedUsers.includes(d.id)) return;
+            allUsersCache.push({ id: d.id, ...d.data() });
+        }
+    });
+}
+
+// --- 24-HOUR EXPIRATION LOGIC ---
+async function loadRequests(){
+    const sentQ = query(collection(db,'requests'), where('senderId','==',currentUser.uid));
+    const recvQ = query(collection(db,'requests'), where('receiverId','==',currentUser.uid));
+    
+    const [sent, recv] = await Promise.all([getDocs(sentQ), getDocs(recvQ)]);
+    
+    allRequests = [];
+    const NOW = Date.now();
+    const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000; 
+
+    // Process Sent Requests
+    for (const d of sent.docs) {
+        const r = d.data();
+        const reqTime = r.createdAt ? r.createdAt.toMillis() : NOW;
+        const timePassed = NOW - reqTime;
+
+        if (r.status === 'pending' && timePassed > TWENTY_FOUR_HOURS) {
+            await deleteDoc(doc(db, 'requests', d.id));
+            document.getElementById('expiredTargetName').textContent = r.receiverName || "User";
+            document.getElementById('expiredModal').style.display = 'flex';
+            continue; 
+        }
+        allRequests.push({id: d.id, role: 'caller', ...r});
+    }
+
+    // Process Received Requests
+    for (const d of recv.docs) {
+        const r = d.data();
+        const reqTime = r.createdAt ? r.createdAt.toMillis() : NOW;
+        const timePassed = NOW - reqTime;
+
+        if (r.status === 'pending' && timePassed > TWENTY_FOUR_HOURS) {
+            await deleteDoc(doc(db, 'requests', d.id));
+            continue; 
+        }
+        allRequests.push({id: d.id, role: 'answerer', ...r});
+    }
+}
+
+// --- DISCOVER LOGIC ---
+function renderDiscover(filterText = "") {
+    ui.content.innerHTML = '';
+    
+    let displayUsers = allUsersCache;
+    if (filterText) {
+        displayUsers = allUsersCache.filter(u => {
+            const skills = Array.isArray(u.skillsOffered) ? u.skillsOffered.join(" ").toLowerCase() : (u.skillOffered || "").toLowerCase();
+            return skills.includes(filterText.toLowerCase());
+        });
+    } else {
+        displayUsers = [...allUsersCache].sort(() => 0.5 - Math.random()).slice(0, 10);
+    }
+
+    if(displayUsers.length === 0) {
+        ui.content.innerHTML = `<div class="empty-msg">No users found offering that skill.</div>`;
+        return;
+    }
+
+    if (!filterText) {
+        ui.content.innerHTML = `<h3 style="margin-bottom:15px; font-size:16px; color:#cbd5e1;">Suggested Matches</h3>`;
+    }
+
+    displayUsers.forEach(u => {
+        // Don't suggest users if we have an active or pending request
+        const existingReq = allRequests.find(r => (r.receiverId === u.id || r.senderId === u.id) && r.status !== 'rejected');
+        if (existingReq) return;
+
+        const div = document.createElement('div');
+        div.className = 'card';
+        
+        let avatarHtml = `<div class="avatar">${(u.name || "U").charAt(0).toUpperCase()}</div>`;
+        if (u.avatarUrl) {
+            avatarHtml = `<img src="${u.avatarUrl}" class="avatar">`;
+        }
+        
+        const score = u.score ? parseFloat(u.score).toFixed(1) : "New";
+        const isOnlineClass = u.isAvailable ? '' : 'offline';
+        const onlineTitle = u.isAvailable ? 'Online' : 'Offline / Away';
+        
+        let skillsHtml = '';
+        let skillArray = Array.isArray(u.skillsOffered) ? u.skillsOffered : (u.skillOffered ? [u.skillOffered] : []);
+        skillArray.forEach(s => skillsHtml += `<span class="skill-tag">${s}</span>`);
+        if(!skillsHtml) skillsHtml = `<span style="font-size:12px;color:#64748b">No skills listed</span>`;
+
+        const userDataStr = encodeURIComponent(JSON.stringify({ id: u.id, name: u.name, email: u.email, skills: skillArray }));
+
+        div.innerHTML = `
+            ${avatarHtml}
+            <div class="info">
+                <div class="name-row">
+                    <div class="name">
+                        ${u.name || "User"}
+                        <span class="status-dot ${isOnlineClass}" title="${onlineTitle}"></span>
+                    </div>
+                    <div class="score">⭐ ${score}</div>
+                </div>
+                <div class="skills-offered">Offers:</div>
+                <div>${skillsHtml}</div>
+            </div>
+            <button class="btn btn-primary" onclick="openRequestModal('${userDataStr}')">Request Swap</button>
+        `;
+        ui.content.appendChild(div);
+    });
+}
+
+ui.searchInput.addEventListener('input', (e) => renderDiscover(e.target.value));
+
+// --- REQUEST MODAL LOGIC ---
+window.openRequestModal = (userDataStr) => {
+    targetUserForRequest = JSON.parse(decodeURIComponent(userDataStr));
+    
+    ui.modalName.textContent = targetUserForRequest.name;
+    ui.modalSelect.innerHTML = '';
+
+    if (targetUserForRequest.skills.length === 0) {
+        ui.modalSelect.innerHTML = `<option value="General Swap">General Skill Swap</option>`;
+    } else {
+        targetUserForRequest.skills.forEach(s => {
+            const opt = document.createElement('option');
+            opt.value = s; opt.textContent = s;
+            ui.modalSelect.appendChild(opt);
+        });
+    }
+    ui.modal.style.display = 'flex';
+};
+
+window.closeModal = () => { 
+    ui.modal.style.display = 'none'; 
+    targetUserForRequest = null; 
+    document.getElementById('offerSkillInput').value = ''; 
+};
+
+ui.confirmBtn.onclick = async () => {
+    if (!targetUserForRequest) return;
+
+    const selectedSkill = ui.modalSelect.value;
+    const offeredSkill = document.getElementById('offerSkillInput').value.trim();
+
+    if (!offeredSkill) {
+        alert("Please enter a skill you can offer in return.");
+        return;
+    }
+
+    ui.confirmBtn.disabled = true; ui.confirmBtn.textContent = "Sending...";
+
+    try {
+        await addDoc(collection(db, 'requests'), {
+            senderId: currentUser.uid,
+            senderName: myData.name || currentUser.displayName || "User",
+            senderEmail: myData.email || currentUser.email || "",
+            senderAvatarUrl: myData.avatarUrl || "",
+            receiverId: targetUserForRequest.id,
+            receiverName: targetUserForRequest.name,
+            receiverEmail: targetUserForRequest.email,
+            skillRequested: selectedSkill,
+            skillOffered: offeredSkill,
+            status: 'pending',
+            createdAt: serverTimestamp()
+        });
+
+        if (targetUserForRequest.email) {
+            try {
+                await emailjs.send("service_ae1iubu", "template_sj4ee1o", {
+                    to_email: targetUserForRequest.email,
+                    to_name: targetUserForRequest.name,
+                    from_name: myData.name || "A User",
+                    message: `They have requested to learn ${selectedSkill} in exchange for teaching you ${offeredSkill}. Log in to SwapSkill to accept or reject this request.`,
+                    skill: selectedSkill
+                });
+            } catch (err) { console.warn("Email failed to send.", err); }
+        }
+
+        alert("Request sent successfully!");
+        closeModal();
+        await loadRequests();
+        activateTab('pending'); 
+    } catch (e) {
+        console.error(e); alert("Error sending request.");
+    } finally {
+        ui.confirmBtn.disabled = false; ui.confirmBtn.textContent = "Send Request";
+    }
+};
+
+// --- PENDING / ACCEPTED / REJECTED LOGIC ---
+function renderRequests(statusFilter) {
+    ui.content.innerHTML = '';
+    const list = allRequests.filter(r => r.status === statusFilter);
+
+    if(!list.length) {
+        ui.content.innerHTML = `<div class="empty-msg">No ${statusFilter} requests.</div>`;
+        return;
+    }
+
+    list.forEach(r => {
+        const div = document.createElement('div');
+        div.className = 'card';
+        
+        const isIncoming = r.role === 'answerer';
+        const badge = isIncoming ? `<div class="badge incoming">Incoming Request</div>` : `<div class="badge outgoing">Outgoing Request</div>`;
+        const otherName = isIncoming ? r.senderName : r.receiverName;
+
+        // --- FETCH SCORE & AVATAR FROM CACHE ---
+        const otherId = isIncoming ? r.senderId : r.receiverId;
+        const otherUser = allUsersCache.find(u => u.id === otherId);
+        const score = (otherUser && otherUser.score) ? parseFloat(otherUser.score).toFixed(1) : "New";
+        
+        const avatarSrc = isIncoming ? r.senderAvatarUrl : (otherUser ? otherUser.avatarUrl : null);
+        let avatarHtml = `<div class="avatar">${(otherName || "U").charAt(0).toUpperCase()}</div>`;
+        if (avatarSrc) {
+            avatarHtml = `<img src="${avatarSrc}" class="avatar">`;
+        }
+
+        // --- REJECTED TAB LOGIC ---
+        if (statusFilter === 'rejected') {
+            const rejectedMsg = isIncoming 
+                ? `You declined their request to learn <b>${r.skillRequested}</b>.` 
+                : `They declined your request to learn <b>${r.skillRequested}</b>.`;
+            
+            div.innerHTML = `
+                ${avatarHtml}
+                <div class="info">
+                    <div class="badge rejected">Rejected</div>
+                    <div class="name-row">
+                        <div class="name" style="color:#94a3b8; text-decoration: line-through;">${otherName || "User"}</div>
+                        <div class="score">⭐ ${score}</div>
+                    </div>
+                    <div style="font-size:14px; color:#64748b;">${rejectedMsg}</div>
+                    <button class="btn btn-ghost" style="margin-top:12px; width:100%; color:#ef4444; border-color:rgba(239,68,68,0.3)" onclick="deleteReq('${r.id}')">🗑️ Remove from History</button>
+                </div>
+            `;
+            ui.content.appendChild(div);
+            return; // Skip normal rendering for rejected
+        }
+        
+        // --- PENDING / ACCEPTED LOGIC ---
+        const infoText = isIncoming 
+            ? `wants to learn <b>${r.skillRequested}</b> in exchange for <b>${r.skillOffered}</b>.` 
+            : `You asked to learn <b>${r.skillRequested}</b> and offered <b>${r.skillOffered}</b>.`;
+
+        let actionBtns = '';
+        if (statusFilter === 'pending') {
+            if (isIncoming) {
+                const reqDataStr = encodeURIComponent(JSON.stringify({ id: r.id, senderEmail: r.senderEmail, senderName: r.senderName, skill: r.skillRequested }));
+                actionBtns = `
+                    <div style="display:flex; gap:10px; width:100%; margin-top:12px;">
+                        <button class="btn btn-success" style="flex:1" onclick="acceptReq('${reqDataStr}')">Accept</button>
+                        <button class="btn btn-danger" style="flex:1" onclick="rejectReq('${r.id}')">Reject</button>
+                    </div>
+                `;
+            } else {
+                actionBtns = `<div style="font-size:13px; color:#94a3b8; margin-top:12px;">Waiting for ${otherName} to respond...</div>`;
+            }
+        } else if (statusFilter === 'accepted') {
+            actionBtns = `<button class="btn btn-primary" style="margin-top:12px; width:100%" onclick="location.replace('session.html?req=${r.id}&role=${r.role}')">🚀 Start Video Session</button>`;
+        }
+
+        div.innerHTML = `
+            ${avatarHtml}
+            <div class="info">
+                ${badge}
+                <div class="name-row">
+                    <div class="name">${otherName || "User"}</div>
+                    <div class="score">⭐ ${score}</div>
+                </div>
+                <div style="font-size:14px; color:#cbd5e1;">${infoText}</div>
+                ${actionBtns}
+            </div>
+        `;
+        ui.content.appendChild(div);
+    });
+}
+
+// --- ACTIONS ---
+window.acceptReq = async (reqDataStr) => {
+    const req = JSON.parse(decodeURIComponent(reqDataStr));
+    try {
+        await updateDoc(doc(db, 'requests', req.id), { status: 'accepted', acceptedAt: serverTimestamp() });
+        
+        if (req.senderEmail) {
+            try {
+                await emailjs.send("service_ae1iubu", "template_sj4ee1o", {
+                    to_email: req.senderEmail,
+                    to_name: req.senderName,
+                    from_name: myData.name || "A User",
+                    message: `Good news! Your request for ${req.skill} has been accepted. Log in to start your video session.`,
+                    skill: req.skill
+                });
+            } catch(e) { console.warn("Accept email failed.", e); }
+        }
+
+        await loadRequests();
+        activateTab('accepted');
+    } catch (e) { console.error(e); alert("Failed to accept."); }
+};
+
+window.rejectReq = async (id) => {
+    if(!confirm("Are you sure you want to decline this request?")) return;
+    await updateDoc(doc(db, 'requests', id), { status: 'rejected' });
+    await loadRequests();
+    renderRequests('pending');
+};
+
+window.deleteReq = async (id) => {
+    if(!confirm("Remove this from your history?")) return;
+    await deleteDoc(doc(db, 'requests', id));
+    await loadRequests();
+    renderRequests('rejected');
+};
+
+// --- TAB NAVIGATION ---
+window.activateTab = (tabName) => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    
+    if (tabName === 'discover') {
+        document.getElementById('tabDiscover').classList.add('active');
+        ui.searchWrapper.style.display = 'block';
+        renderDiscover(ui.searchInput.value);
+    } else {
+        ui.searchWrapper.style.display = 'none';
+        if (tabName === 'pending') document.getElementById('tabPending').classList.add('active');
+        if (tabName === 'accepted') document.getElementById('tabAccepted').classList.add('active');
+        if (tabName === 'rejected') document.getElementById('tabRejected').classList.add('active');
+        renderRequests(tabName);
+    }
+};
+
+document.getElementById('tabDiscover').onclick = () => activateTab('discover');
+document.getElementById('tabPending').onclick = () => activateTab('pending');
+document.getElementById('tabAccepted').onclick = () => activateTab('accepted');
+document.getElementById('tabRejected').onclick = () => activateTab('rejected');
+
+</script>
+</body>
+</html>

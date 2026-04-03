@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sign Up — SwapSkill</title>
+  <link rel="manifest" href="/manifest.json">
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js');
+  }
+</script>
+  <link rel="icon" type="image/png" href="/logo.png">
+  <style>
+    :root {
+      --primary: #3b82f6;
+      --bg: #0f172a;
+      --text: #f8fafc;
+      --glass: rgba(30, 41, 59, 0.6);
+      --border: rgba(255, 255, 255, 0.1);
+      --danger: #ef4444;
+      --success: #22c55e;
+    }
+
+    body {
+      display: flex; justify-content: center; align-items: center;
+      min-height: 100vh; margin: 0;
+      font-family: system-ui, -apple-system, sans-serif;
+      background: radial-gradient(circle at top right, #1e293b, #0f172a);
+      color: var(--text);
+    }
+
+    .container {
+      background: var(--glass);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 40px 32px;
+      width: 100%; max-width: 400px;
+      text-align: center;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+      position: relative;
+    }
+
+    h2 { margin: 0 0 24px 0; font-size: 24px; background: linear-gradient(90deg, #60a5fa, #3b82f6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+
+    .input-group { margin-bottom: 16px; text-align: left; }
+    label { display: block; font-size: 13px; color: #94a3b8; margin-bottom: 6px; font-weight: 600; }
+    
+    input {
+      width: 100%; padding: 12px 16px; 
+      background: rgba(0,0,0,0.2); border: 1px solid var(--border);
+      border-radius: 12px; color: #fff; outline: none; box-sizing: border-box;
+      transition: 0.2s;
+    }
+    input:focus { border-color: var(--primary); background: rgba(0,0,0,0.4); }
+
+    .status-msg { font-size: 12px; margin-top: 4px; min-height: 18px; }
+    .status-msg.error { color: var(--danger); }
+    .status-msg.success { color: var(--success); }
+
+    /* Standard Button */
+    button {
+      width: 100%; padding: 14px; margin-top: 10px;
+      background: var(--primary); border: none; border-radius: 12px;
+      color: white; font-weight: 600; cursor: pointer; transition: 0.2s;
+    }
+    button:hover { background: #2563eb; transform: translateY(-2px); }
+    button:disabled { opacity: 0.7; cursor: not-allowed; }
+
+    /* Google Button */
+    .google-btn {
+      background: #ffffff !important; color: #1e293b !important;
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      margin-top: 20px;
+    }
+    .google-btn:hover { background: #f1f5f9 !important; }
+    .google-icon { width: 20px; height: 20px; }
+
+    .divider {
+      display: flex; align-items: center; color: #64748b; font-size: 12px; margin: 24px 0;
+    }
+    .divider::before, .divider::after {
+      content: ""; flex: 1; height: 1px; background: var(--border);
+    }
+    .divider span { padding: 0 10px; }
+
+    .link { display: block; margin-top: 20px; color: #94a3b8; font-size: 13px; text-decoration: none; }
+    .link:hover { color: var(--primary); }
+    #error { color: var(--danger); font-size: 13px; margin-top: 10px; }
+
+    /* OTP Section */
+    #otpSection { display: none; animation: slideIn 0.3s ease; }
+    #signupForm { animation: fadeIn 0.3s ease; }
+    
+    .otp-info { font-size: 14px; color: #cbd5e1; margin-bottom: 20px; line-height: 1.5; }
+    
+    @keyframes slideIn { from{transform:translateX(50px);opacity:0} to{transform:translateX(0);opacity:1} }
+    @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h2>Create Account</h2>
+    
+    <div id="signupForm">
+      
+      <button id="googleBtn" class="google-btn">
+        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/google/google-original.svg" class="google-icon" alt="G">
+        Sign up with Google
+      </button>
+
+      <div class="divider"><span>OR CONTINUE WITH EMAIL</span></div>
+
+      <div class="input-group">
+        <label>Full Name</label>
+        <input type="text" id="name" placeholder="John Doe">
+      </div>
+
+      <div class="input-group">
+        <label>Username</label>
+        <input type="text" id="username" placeholder="johndoe123">
+        <div id="usernameMsg" class="status-msg"></div>
+      </div>
+
+      <div class="input-group">
+        <label>Email</label>
+        <input type="email" id="email" placeholder="student@uni.edu">
+      </div>
+      
+      <div class="input-group">
+        <label>Password</label>
+        <input type="password" id="password" placeholder="Min 6 chars">
+      </div>
+
+      <button id="sendOtpBtn">Sign Up (Verify Email)</button>
+      <p id="formError" style="color:#ef4444;font-size:13px;margin-top:10px"></p>
+      
+      <a class="link" href="login.html">Already have an account? Login</a>
+    </div>
+
+    <div id="otpSection">
+      <p class="otp-info">
+        We sent a 6-digit code to <br><b id="displayEmail" style="color:#fff"></b>
+      </p>
+
+      <div class="input-group">
+        <label>Enter OTP Code</label>
+        <input type="text" id="otpInput" placeholder="123456" maxlength="6" style="text-align:center;letter-spacing:4px;font-size:18px;">
+      </div>
+
+      <button id="verifyBtn">Verify & Create Account</button>
+      <p id="otpError" style="color:#ef4444;font-size:13px;margin-top:10px"></p>
+
+      <div style="margin-top:15px; font-size:12px;">
+        <span style="color:#94a3b8; cursor:pointer; text-decoration:underline;" onclick="location.reload()">Cancel / Change Email</span>
+      </div>
+    </div>
+
+  </div>
+
+<script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
+<script>
+  (function(){
+      // Initialize EmailJS immediately
+      emailjs.init("QWgG6h3s9AuU-du3B");
+  })();
+</script>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js";
+import { getAuth, createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-auth.js";
+import { getFirestore, doc, setDoc, getDoc, collection, query, where, getDocs, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-firestore.js";
+
+const app = initializeApp({
+  apiKey: "AIzaSyDwrZVBhR0VSbkbiktvkOsW3iSYJ6PFJ9A",
+  authDomain: "swapskill.web.app",
+  projectId: "swapskill-6e456"
+});
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+// State
+let generatedOTP = null;
+let isUsernameValid = false;
+let timeout = null;
+
+// Elements
+const formDiv = document.getElementById('signupForm');
+const otpDiv = document.getElementById('otpSection');
+const usernameInput = document.getElementById('username');
+const usernameMsg = document.getElementById('usernameMsg');
+const sendBtn = document.getElementById('sendOtpBtn');
+const verifyBtn = document.getElementById('verifyBtn');
+const googleBtn = document.getElementById('googleBtn');
+const formError = document.getElementById('formError');
+const otpError = document.getElementById('otpError');
+
+// --- GOOGLE SIGN UP LOGIC ---
+googleBtn.onclick = async () => {
+    const provider = new GoogleAuthProvider();
+    googleBtn.disabled = true;
+    googleBtn.innerHTML = "Connecting...";
+
+    try {
+        const result = await signInWithPopup(auth, provider);
+        const user = result.user;
+
+        // Check if user document already exists
+        const userRef = doc(db, "users", user.uid);
+        const userSnap = await getDoc(userRef);
+
+        if (!userSnap.exists()) {
+            // New User: Create Database Entry
+            await setDoc(userRef, {
+                name: user.displayName,
+                email: user.email,
+                username: user.email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, ''), // Generate temporary username
+                avatarUrl: user.photoURL, // Use Google Profile Pic
+                createdAt: serverTimestamp(),
+                score: 0,
+                verified: true
+            });
+        }
+        
+        // Redirect to profile setup
+        window.location.href = "userprofile.html";
+
+    } catch (error) {
+        console.error("Google Sign-In Error:", error);
+        formError.textContent = "Google Sign-In Failed: " + error.message;
+        googleBtn.disabled = false;
+        googleBtn.innerHTML = '<img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/google/google-original.svg" class="google-icon" alt="G"> Sign up with Google';
+    }
+};
+
+// --- EXISTING EMAIL/PASS LOGIC ---
+
+// Username Check
+usernameInput.addEventListener('input', () => {
+  clearTimeout(timeout);
+  const val = usernameInput.value.trim().toLowerCase();
+  isUsernameValid = false;
+
+  if(val.length < 3) {
+    usernameMsg.textContent = "Too short (min 3 chars)";
+    usernameMsg.className = "status-msg error";
+    return;
+  }
+  
+  if(!/^[a-z0-9_]+$/.test(val)) {
+    usernameMsg.textContent = "Only letters, numbers, _ allowed";
+    usernameMsg.className = "status-msg error";
+    return;
+  }
+
+  usernameMsg.textContent = "Checking...";
+  usernameMsg.className = "status-msg";
+
+  timeout = setTimeout(async () => {
+    const q = query(collection(db, "users"), where("username", "==", val));
+    const snap = await getDocs(q);
+    
+    if(!snap.empty) {
+      usernameMsg.textContent = "❌ Username taken";
+      usernameMsg.className = "status-msg error";
+    } else {
+      usernameMsg.textContent = "✅ Available";
+      usernameMsg.className = "status-msg success";
+      isUsernameValid = true;
+    }
+  }, 500);
+});
+
+// Send OTP
+sendBtn.onclick = async () => {
+  const name = document.getElementById('name').value.trim();
+  const username = document.getElementById('username').value.trim().toLowerCase();
+  const email = document.getElementById('email').value.trim();
+  const pass = document.getElementById('password').value;
+
+  if(!name || !username || !email || !pass) return formError.textContent = "Please fill all fields";
+  if(!isUsernameValid) return formError.textContent = "Invalid or taken username";
+  if(pass.length < 6) return formError.textContent = "Password too short (min 6)";
+
+  sendBtn.innerText = "Sending OTP...";
+  sendBtn.disabled = true;
+  formError.textContent = "";
+
+  // Generate 6 digit OTP
+  generatedOTP = Math.floor(100000 + Math.random() * 900000).toString();
+
+  try {
+    const templateParams = {
+      to_email: email,
+      otp: generatedOTP,
+      to_name: name 
+    };
+
+    await emailjs.send("service_ae1iubu", "template_yf49r3j", templateParams);
+
+    // Switch UI
+    document.getElementById('displayEmail').textContent = email;
+    formDiv.style.display = 'none';
+    otpDiv.style.display = 'block';
+
+  } catch(err) {
+    console.error("EmailJS Error:", err);
+    formError.textContent = "Failed to send email. Check address.";
+    sendBtn.innerText = "Sign Up (Verify Email)";
+    sendBtn.disabled = false;
+  }
+};
+
+// Verify & Create
+verifyBtn.onclick = async () => {
+  const enteredOtp = document.getElementById('otpInput').value.trim();
+  
+  if(enteredOtp !== generatedOTP) {
+    otpError.textContent = "Incorrect OTP. Try again.";
+    return;
+  }
+
+  verifyBtn.innerText = "Creating Account...";
+  verifyBtn.disabled = true;
+  otpError.textContent = "";
+
+  const name = document.getElementById('name').value.trim();
+  const username = document.getElementById('username').value.trim().toLowerCase();
+  const email = document.getElementById('email').value.trim();
+  const pass = document.getElementById('password').value;
+
+  try {
+    const userCred = await createUserWithEmailAndPassword(auth, email, pass);
+    const uid = userCred.user.uid;
+
+    await setDoc(doc(db, "users", uid), {
+      name: name,
+      username: username,
+      email: email,
+      createdAt: serverTimestamp(),
+      score: 0,
+      verified: true
+    });
+
+    window.location.href = "userprofile.html";
+
+  } catch(e) {
+    verifyBtn.innerText = "Verify & Create Account";
+    verifyBtn.disabled = false;
+    if(e.code === 'auth/email-already-in-use') {
+      otpError.textContent = "This email is already registered.";
+    } else {
+      otpError.textContent = "Error: " + e.message;
+    }
+  }
+};
+</script>
+</body>
+</html>
